@@ -490,14 +490,14 @@ body::before {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  height: 128px;
+  height: 150px;
   padding: 0 6px;
   margin-bottom: 8px;   /* 与操作行隔开,牌角/虚线不压按钮 */
 }
 .card {
   position: relative;
-  width: 64px; height: 94px;
-  margin: 0 -10px;
+  width: 76px; height: 112px;
+  margin: 0 -15px;
   border-radius: 8px;
   background: var(--bg-card);
   border: 1px solid rgba(216, 180, 106, 0.4);
@@ -519,23 +519,23 @@ body::before {
 }
 .card .rank {
   font-family: var(--serif);
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   line-height: 1;
   text-shadow: 0 0 10px currentColor;
 }
-.card .glyph-s { width: 16px; height: 16px; stroke: currentColor; }
+.card .glyph-s { width: 19px; height: 19px; stroke: currentColor; }
 .card .glyph-w {
   position: absolute;
-  left: 4px; bottom: 4px;        /* 左置:重叠只盖右侧装饰区 */
-  width: 32px; height: 32px;
+  left: 5px; bottom: 5px;        /* 左置:重叠只盖右侧装饰区 */
+  width: 42px; height: 42px;
   stroke: currentColor;
   opacity: 0.38;
   pointer-events: none;
 }
 .card.selected {
   /* 只上浮:不提 z-index、不放大,避免盖住邻牌的可点击区域 */
-  transform: rotate(var(--rot, 0deg)) translateY(calc(var(--arc, 0px) - 30px));
+  transform: rotate(var(--rot, 0deg)) translateY(calc(var(--arc, 0px) - 36px));
   border-color: currentColor;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), 0 0 22px -2px currentColor;
   filter: brightness(1.12);
@@ -1090,11 +1090,11 @@ body::before {
 
 /* 小屏适配 */
 @media (max-height: 740px) {
-  .hand { height: 118px; }
-  .card { width: 58px; height: 84px; margin: 0 -11px; }
+  .hand { height: 136px; }
+  .card { width: 70px; height: 102px; margin: 0 -14px; }
   .relic-row { min-height: 36px; }
 }
 @media (max-width: 380px) {
-  .card { width: 58px; height: 86px; margin: 0 -13px; }
-  .card .rank { font-size: 17px; }
+  .card { width: 70px; height: 104px; margin: 0 -16px; }
+  .card .rank { font-size: 22px; }
 }

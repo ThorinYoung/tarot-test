@@ -1712,6 +1712,11 @@ function showShop() {
 function showCardService(mode, price) {
   const isUp = mode === "upgrade";
   const pool = shuffle(S.runDeck.filter(c => (isUp ? c.rank < 10 : true))).slice(0, 8);
+  if (!pool.length) {
+    say(null, isUp ? "牌库里已没有可升阶的印记——全部满阶了。" : "牌库已空,无可析灭。");
+    showShop();
+    return;
+  }
   const cardsHtml = pool.map((c, i) => {
     const isDual = !!c.suits;
     const s1 = SUITS[isDual ? c.suits[0] : c.suit];

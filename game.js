@@ -242,8 +242,11 @@ const COURT_SEND = {
 const RULES = { handSize: 7, plays: 4, swaps: 3, maxPlay: 5, maxSwap: 3, arcanaUses: 1, revives: 1 };
 const REV_CHANCE = 0.35;
 
+/* 阈值曲线 v0.9.1:基于 250 局贪心 bot 模拟扫描定参——
+   (100,1.35) bot 100% 通关(碾压);(150,1.42) bot 60% 通关且失败集中 6-10 层、
+   终焉层为最大卡点 → 取后者。真人预估通关率 10-25%,正式调参等内测(docs/05) */
 function thresholdOf(layer) {
-  return Math.round((100 * Math.pow(1.35, layer - 1)) / 5) * 5;
+  return Math.round((150 * Math.pow(1.42, layer - 1)) / 5) * 5;
 }
 const LAYER_NAMES = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
 const FINAL_LAYER = 10;

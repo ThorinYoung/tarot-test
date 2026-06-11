@@ -448,7 +448,7 @@ body::before {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  height: 134px;
+  height: 140px;
   padding: 0 6px;
 }
 .card {
@@ -491,9 +491,9 @@ body::before {
   pointer-events: none;
 }
 .card.selected {
-  transform: rotate(var(--rot, 0deg)) translateY(calc(var(--arc, 0px) - 20px));
+  transform: rotate(var(--rot, 0deg)) translateY(calc(var(--arc, 0px) - 34px)) scale(1.05);
   border-color: currentColor;
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.6), 0 0 20px -2px currentColor;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), 0 0 22px -2px currentColor;
   z-index: 5;
 }
 .card.suggested::after {

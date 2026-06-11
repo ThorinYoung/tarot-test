@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#070b1a">
+<title>星轨裁决 · 内部演示</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="starfield"></canvas>
+
+<!-- SVG 资产库:四花色星徽 + 大阿卡纳异象图标 + 装饰 -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- 权杖 · 火 -->
+    <g id="glyph-wand">
+      <path d="M24 6 L24 40" stroke-width="3" stroke-linecap="round" fill="none"/>
+      <path d="M24 6 C20 12 18 16 24 20 C30 16 28 12 24 6 Z" stroke-width="2" fill="currentColor" fill-opacity="0.35"/>
+      <path d="M17 13 C20 15 21 17 21 20 M31 13 C28 15 27 17 27 20" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      <circle cx="24" cy="40" r="2.6" fill="currentColor"/>
+      <path d="M19 35 L29 35" stroke-width="1.6" stroke-linecap="round"/>
+    </g>
+    <!-- 星币 · 土 -->
+    <g id="glyph-coin">
+      <circle cx="24" cy="24" r="16" stroke-width="2.4" fill="none"/>
+      <circle cx="24" cy="24" r="12.5" stroke-width="1" fill="none" opacity="0.6"/>
+      <path d="M24 13.5 L26.8 20.4 L34.2 20.9 L28.5 25.7 L30.3 32.9 L24 29 L17.7 32.9 L19.5 25.7 L13.8 20.9 L21.2 20.4 Z"
+            stroke-width="1.6" stroke-linejoin="round" fill="currentColor" fill-opacity="0.3"/>
+    </g>
+    <!-- 宝剑 · 风 -->
+    <g id="glyph-sword">
+      <path d="M24 5 L27.5 12 L27.5 30 L24 34 L20.5 30 L20.5 12 Z" stroke-width="2" stroke-linejoin="round" fill="currentColor" fill-opacity="0.25"/>
+      <path d="M24 9 L24 31" stroke-width="1.2" opacity="0.8"/>
+      <path d="M15 33.5 L33 33.5" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M24 33.5 L24 41" stroke-width="2.4" stroke-linecap="round"/>
+      <circle cx="24" cy="42.5" r="2" fill="currentColor"/>
+    </g>
+    <!-- 圣杯 · 水 -->
+    <g id="glyph-cup">
+      <path d="M13 10 C13 22 18 26 24 26 C30 26 35 22 35 10 Z" stroke-width="2.2" stroke-linejoin="round" fill="currentColor" fill-opacity="0.25"/>
+      <path d="M24 26 L24 35 M16.5 39 C19 36.5 29 36.5 31.5 39" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      <path d="M20 14 L21.5 17.2 L25 17.5 L22.4 19.8 L23.2 23 L20 21.2 L16.8 23 L17.6 19.8 L15 17.5 L18.5 17.2 Z"
+            transform="translate(4 -2)" stroke-width="0" fill="currentColor" opacity="0.9"/>
+    </g>
+    <!-- 命运之轮 -->
+    <g id="glyph-wheel">
+      <circle cx="24" cy="24" r="17" stroke-width="2.4" fill="none"/>
+      <circle cx="24" cy="24" r="10" stroke-width="1.4" fill="none" opacity="0.8"/>
+      <circle cx="24" cy="24" r="3" fill="currentColor"/>
+      <path d="M24 7 L24 14 M24 34 L24 41 M7 24 L14 24 M34 24 L41 24
+               M12 12 L17 17 M31 31 L36 36 M36 12 L31 17 M17 31 L12 36"
+            stroke-width="1.8" stroke-linecap="round"/>
+    </g>
+
+    <!-- ===== 异象(大阿卡纳)图标 24x24 线稿 ===== -->
+    <g id="rg-star"><path d="M12 2.5 L14.2 8.8 L21 9.2 L15.8 13.5 L17.4 20 L12 16.4 L6.6 20 L8.2 13.5 L3 9.2 L9.8 8.8 Z" stroke-width="1.4" stroke-linejoin="round" fill="none"/></g>
+    <g id="rg-sun"><circle cx="12" cy="12" r="5" stroke-width="1.5" fill="none"/><path d="M12 2 L12 5 M12 19 L12 22 M2 12 L5 12 M19 12 L22 12 M5 5 L7 7 M17 17 L19 19 M19 5 L17 7 M7 17 L5 19" stroke-width="1.4" stroke-linecap="round"/></g>
+    <g id="rg-moon"><path d="M16.5 3.5 A 9.5 9.5 0 1 0 20.5 16 A 7.5 7.5 0 0 1 16.5 3.5 Z" stroke-width="1.5" stroke-linejoin="round" fill="none"/></g>
+    <g id="rg-strength"><path d="M7 12 C7 8.5 10 8.5 12 11 C14 13.5 17 13.5 17 10.5 C17 7.5 14 7.5 12 10 C10 12.5 7 15.5 7 12 Z M12 11 C10 8.5 7 8.5 7 12 C7 15.5 10 15.5 12 13 C14 10.5 17 10.5 17 13.5" stroke-width="1.4" fill="none" stroke-linecap="round"/><path d="M5 19 L19 19" stroke-width="1.4" stroke-linecap="round"/></g>
+    <g id="rg-emperor"><path d="M4 18 L4 9 L8.5 13 L12 6 L15.5 13 L20 9 L20 18 Z" stroke-width="1.5" stroke-linejoin="round" fill="none"/><circle cx="12" cy="16" r="1.2" fill="currentColor"/></g>
+    <g id="rg-hermit"><path d="M12 3 L17 7 L17 16 L7 16 L7 7 Z" stroke-width="1.5" stroke-linejoin="round" fill="none"/><path d="M12 8 L12 12" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="13.6" r="0.9" fill="currentColor"/><path d="M9 19 L15 19 M10.5 21.5 L13.5 21.5" stroke-width="1.3" stroke-linecap="round"/></g>
+    <g id="rg-justice"><path d="M12 3 L12 19 M5 6.5 L19 6.5 M9 19 L15 19" stroke-width="1.4" stroke-linecap="round"/><path d="M5 6.5 L3 12 L7 12 Z M19 6.5 L17 12 L21 12 Z" stroke-width="1.3" stroke-linejoin="round" fill="none"/></g>
+    <g id="rg-temperance"><path d="M5 5 L12 11 L19 5 M5 19 L12 13 L19 19" stroke-width="1.5" stroke-linejoin="round" fill="none"/><path d="M12 11 L12 13" stroke-width="1.4"/></g>
+    <g id="rg-magician"><path d="M5 19 L17 5" stroke-width="1.7" stroke-linecap="round"/><path d="M18.5 3.2 L19.2 5.2 L21.2 5.9 L19.2 6.6 L18.5 8.6 L17.8 6.6 L15.8 5.9 L17.8 5.2 Z" fill="currentColor" stroke-width="0"/><circle cx="8" cy="9" r="0.9" fill="currentColor"/><circle cx="14" cy="15" r="0.9" fill="currentColor"/></g>
+    <g id="rg-empress"><circle cx="12" cy="9" r="5.5" stroke-width="1.5" fill="none"/><path d="M12 14.5 L12 21 M8.8 17.8 L15.2 17.8" stroke-width="1.5" stroke-linecap="round"/></g>
+
+    <!-- 八芒星装饰 -->
+    <g id="glyph-octa">
+      <path d="M24 4 L27 21 L44 24 L27 27 L24 44 L21 27 L4 24 L21 21 Z" fill="currentColor"/>
+    </g>
+  </defs>
+</svg>
+
+<div class="app" id="app">
+
+  <!-- ======= 顶部 ======= -->
+  <header class="hud">
+    <div class="hud-row">
+      <div class="rift-label">
+        <span class="rift-deco">✦</span>
+        <span id="layerName">裂隙 · 第一星层</span>
+        <span class="ver-tag" id="verTag">Ⅰ</span>
+      </div>
+      <div class="hud-icons">
+        <button class="icon-btn" id="btnGuide" title="引导等级">导</button>
+        <button class="icon-btn" id="btnSound" title="音效">♪</button>
+        <button class="icon-btn" id="btnHelp" title="裁决式图鉴">式</button>
+      </div>
+    </div>
+    <!-- 异象槽 -->
+    <div class="relic-row" id="relicRow"></div>
+  </header>
+
+  <!-- ======= 裂隙舞台 ======= -->
+  <main class="stage" id="stage">
+    <svg class="rift" id="riftSvg" viewBox="0 0 200 300" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="stage-meter" id="stageMeter"><b id="meterNow">0</b> / <span id="meterGoal">100</span></div>
+    <div class="played-cards" id="playedCards"></div>
+    <svg class="constellation" id="constellation"></svg>
+    <div class="combo-banner" id="comboBanner"></div>
+    <div class="lead-toast" id="leadToast"></div>
+  </main>
+
+  <!-- ======= 计分条(常驻 底分 × 倍率) ======= -->
+  <div class="score-bar idle" id="scoreBar">
+    <span class="sb-combo" id="sbCombo">—</span>
+    <div class="sb-nums">
+      <span class="sb-chip sb-base" id="sbBase">0</span>
+      <span class="sb-x">×</span>
+      <span class="sb-chip sb-mult" id="sbMult">0</span>
+      <span class="sb-eq">=</span>
+      <span class="sb-total" id="sbTotal">0</span>
+    </div>
+  </div>
+  <div class="hint-line" id="hintLine">点选下方印记,凝聚星轨缝合裂隙</div>
+
+  <!-- ======= 手牌 ======= -->
+  <div class="hand" id="hand"></div>
+
+  <!-- ======= 操作行 ======= -->
+  <footer class="actions-row">
+    <button class="arcana-slot" id="btnArcana" title="法则 · 命运之轮">
+      <svg viewBox="0 0 48 48"><use href="#glyph-wheel"/></svg>
+      <span class="arcana-uses" id="arcanaUses">1</span>
+    </button>
+    <button class="btn btn-swap" id="btnSwap" disabled>重引<span class="btn-badge" id="swapsLeft">3</span></button>
+    <button class="btn btn-play" id="btnPlay" disabled>校 准<span class="btn-badge gold" id="playsLeft">4</span></button>
+  </footer>
+</div>
+
+<!-- ======= 弹层 ======= -->
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal"></div>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>

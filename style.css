@@ -491,10 +491,11 @@ body::before {
   pointer-events: none;
 }
 .card.selected {
-  transform: rotate(var(--rot, 0deg)) translateY(calc(var(--arc, 0px) - 34px)) scale(1.05);
+  /* 只上浮:不提 z-index、不放大,避免盖住邻牌的可点击区域 */
+  transform: rotate(var(--rot, 0deg)) translateY(calc(var(--arc, 0px) - 30px));
   border-color: currentColor;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), 0 0 22px -2px currentColor;
-  z-index: 5;
+  filter: brightness(1.12);
 }
 .card.suggested::after {
   content: "";

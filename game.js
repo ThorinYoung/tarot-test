@@ -481,73 +481,56 @@ function draw(count) {
   return out;
 }
 
-/* ---------------- 裂隙渲染 ---------------- */
+/* ---------------- 裂隙渲染:序列帧引擎(city.mp4 → 61 帧) ---------------- */
 const rift = (() => {
-  const NS = "http://www.w3.org/2000/svg";
-  let seamPath = null, seamLen = 0, stitches = [];
-  function jaggedPoints() {
-    const pts = [];
-    const SEG = 11;
-    for (let i = 0; i <= SEG; i++) {
-      const t = i / SEG;
-      const y = 286 - t * 266;
-      const x = 100 + (i === 0 || i === SEG ? 0 : (Math.random() * 44 - 22));
-      pts.push([x, y]);
-    }
-    return pts;
-  }
-  function build() {
-    const svg = $("riftSvg");
-    svg.classList.remove("sealed");
-    svg.innerHTML = "";
-    const pts = jaggedPoints();
-    const d = "M" + pts.map(p => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(" L");
-    for (const cls of ["crack-glow", "crack-mid", "crack-core"]) {
-      const p = document.createElementNS(NS, "path");
-      p.setAttribute("d", d); p.setAttribute("class", cls);
-      svg.appendChild(p);
-    }
-    seamPath = document.createElementNS(NS, "path");
-    seamPath.setAttribute("d", d);
-    seamPath.setAttribute("class", "seam");
-    svg.appendChild(seamPath);
-    seamLen = seamPath.getTotalLength();
-    seamPath.style.strokeDasharray = seamLen;
-    seamPath.style.transition = "none";
-    seamPath.style.strokeDashoffset = seamLen;
-    seamPath.getBoundingClientRect();
-    seamPath.style.transition = "";
-    stitches = [];
-    for (let i = 1; i <= 9; i++) {
-      const at = i / 10;
-      const pt = seamPath.getPointAtLength(seamLen * at);
-      const st = document.createElementNS(NS, "line");
-      st.setAttribute("x1", pt.x - 7); st.setAttribute("y1", pt.y + 7);
-      st.setAttribute("x2", pt.x + 7); st.setAttribute("y2", pt.y - 7);
-      st.setAttribute("class", "stitch");
-      st.dataset.at = at;
-      svg.appendChild(st);
-      stitches.push(st);
+  /* cf_001..cf_039 = 映射段(裂隙最大→紫光熄灭,原视频帧 0-76),进入分数百分比映射;
+     cf_040..cf_061 = 结算段(云涡散开·天光放亮,原帧 78-120),不进映射,过层时整段播放 */
+  const TOTAL = 61, MAP_N = 39;
+  const srcOf = i => `assets/city/cf_${String(i + 1).padStart(3, "0")}.jpg`;
+  const imgs = [];
+  let cur = 0, animId = 0;
+  for (let i = 0; i < TOTAL; i++) { const im = new Image(); im.src = srcOf(i); imgs.push(im); }
+
+  function show(i) {
+    cur = Math.max(0, Math.min(TOTAL - 1, i));
+    const f = $("riftFrame");
+    if (f) f.src = imgs[cur].src;
+    /* 裂隙辉光随闭合进度收缩变暗,进入结算段后熄灭 */
+    const p = Math.min(1, cur / (MAP_N - 1));
+    const g = $("riftGlow");
+    if (g) {
+      g.style.opacity = cur >= MAP_N ? "0" : String(0.15 + 0.6 * (1 - p));
+      g.style.transform = `translate(-50%, -50%) scale(${(0.4 + 1.15 * (1 - p)).toFixed(2)})`;
     }
   }
-  function update(ratio) {
-    if (!seamPath) return;
-    const r = Math.min(1, ratio);
-    seamPath.style.strokeDashoffset = seamLen * (1 - r);
-    stitches.forEach(st => st.classList.toggle("lit", r >= +st.dataset.at + 0.04));
-    if (r >= 1) $("riftSvg").classList.add("sealed");
+  /* 区间播放:easeInOutQuad,首尾平缓过渡 */
+  function animateTo(idx, done, frameMs = 46) {
+    cancelAnimationFrame(animId);
+    idx = Math.max(0, Math.min(TOTAL - 1, idx));
+    const from = cur, span = idx - from;
+    if (span === 0) { done && done(); return; }
+    const dur = Math.min(1700, Math.max(280, Math.abs(span) * frameMs));
+    const t0 = performance.now();
+    const ease = t => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+    const step = (t) => {
+      const p = Math.min(1, (t - t0) / dur);
+      show(from + Math.round(span * ease(p)));
+      if (p < 1) animId = requestAnimationFrame(step);
+      else done && done();
+    };
+    animId = requestAnimationFrame(step);
   }
-  function tipPx(ratio) {
-    const svg = $("riftSvg");
-    const rect = svg.getBoundingClientRect();
-    const stageRect = $("stage").getBoundingClientRect();
-    const s = Math.min(rect.width / 200, rect.height / 300);
-    const ox = (rect.width - 200 * s) / 2 + (rect.left - stageRect.left);
-    const oy = (rect.height - 300 * s) / 2 + (rect.top - stageRect.top);
-    const pt = seamPath.getPointAtLength(seamLen * Math.min(1, ratio));
-    return { x: ox + pt.x * s, y: oy + pt.y * s };
+
+  function build() { cancelAnimationFrame(animId); show(0); }       /* 每层:裂隙重新撕开 */
+  function update(ratio) { animateTo(Math.round(Math.min(1, ratio) * (MAP_N - 1))); }
+  function playSettle(done) { animateTo(TOTAL - 1, done, 56); }     /* 过层:结算段(天光放亮) */
+  function reverseToZero(done) { animateTo(0, done, 34); }          /* 失败:倒放,裂隙重新撕开 */
+  function progress() { return cur / (MAP_N - 1); }                 /* >1 = 已入结算段 */
+  function tipPx() {
+    const r = $("stage").getBoundingClientRect();
+    return { x: r.width / 2, y: r.height * 0.21 };                  /* 光流目标:裂隙中心 */
   }
-  return { build, update, tipPx };
+  return { build, update, tipPx, playSettle, reverseToZero, progress };
 })();
 
 /* ---------------- 渲染 ---------------- */
@@ -891,17 +874,16 @@ function flash(red = false) {
   f.classList.remove("go"); void f.offsetWidth; f.classList.add("go");
 }
 
-/* 失败演出:缝线溃散 + 裂隙暴走 + 红闪 */
+/* 失败演出:帧序列倒放(裂隙反向撕开)+ 红屏脉动 */
 async function breakdownShow() {
-  const svg = $("riftSvg");
   const stage = $("stage");
-  svg.classList.add("broken");
-  rift.update(0);                       /* 缝线崩开回退 */
+  stage.classList.add("collapse");
   flash(true);
   stage.classList.add("shake-hard");
   setTimeout(() => stage.classList.remove("shake-hard"), 450);
-  await wait(1000);
-  svg.classList.remove("broken");
+  await new Promise(res => rift.reverseToZero(res));
+  await wait(260);
+  stage.classList.remove("collapse");
 }
 
 /* 爆点粒子(舞台坐标) */
@@ -932,6 +914,7 @@ function impactRing(x, y) {
 async function sealCelebration() {
   const stage = $("stage");
   const rect = stage.getBoundingClientRect();
+  rift.playSettle();                      /* 结算段:云涡散开,天光放亮(与盖章并行) */
   const st = document.createElement("div");
   st.className = "seal-stamp";
   st.innerHTML = "<span>裂 隙 稳 定</span>";
@@ -1307,22 +1290,27 @@ $("btnSound").addEventListener("click", function () {
 });
 document.body.addEventListener("pointerdown", () => sfx.unlock(), { once: true });
 
-/* 裂隙余烬粒子(常驻氛围) */
+/* 裂隙粒子:从裂隙处洒落碎屑,密度/范围随闭合进度衰减;闭合后只偶发金色平静粒 */
 setInterval(() => {
   if (document.hidden) return;
   const stage = $("stage");
   if (!stage || $("overlay").classList.contains("show")) return;
+  const p = Math.min(1, rift.progress());
+  if (p >= 1 && Math.random() < 0.8) return;
   const r = stage.getBoundingClientRect();
   const e = document.createElement("div");
   e.className = "ember";
-  e.style.color = Math.random() < 0.35 ? "rgba(243,216,150,0.9)" : "rgba(255,91,110,0.85)";
-  e.style.left = `${r.width * (0.38 + Math.random() * 0.24)}px`;
-  e.style.top = `${r.height * (0.25 + Math.random() * 0.55)}px`;
-  e.style.setProperty("--dx", `${Math.random() * 30 - 15}px`);
-  e.style.setProperty("--dur", `${2.8 + Math.random() * 1.6}s`);
+  const spread = 0.07 + 0.2 * (1 - p);
+  e.style.color = p >= 1 ? "rgba(243,216,150,0.85)"
+    : (Math.random() < 0.6 ? "rgba(186,134,255,0.9)" : "rgba(255,91,110,0.8)");
+  e.style.left = `${r.width * (0.5 + (Math.random() * 2 - 1) * spread)}px`;
+  e.style.top = `${r.height * (0.10 + Math.random() * 0.18)}px`;
+  e.style.setProperty("--dx", `${Math.random() * 40 - 20}px`);
+  e.style.setProperty("--dy", `${70 + Math.random() * 90}px`);
+  e.style.setProperty("--dur", `${2.2 + Math.random() * 1.4}s`);
   stage.appendChild(e);
-  setTimeout(() => e.remove(), 4600);
-}, 420);
+  setTimeout(() => e.remove(), 3800);
+}, 300);
 
 /* 启动 */
 rift.build();

@@ -177,7 +177,40 @@ body::before {
   75% { transform: translateX(1.5px); }
 }
 
-/* 裂隙 SVG */
+/* 裂隙序列帧(city.mp4 提取,576→512px,61 帧) */
+.rift-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+/* 裂隙辉光:位置随帧序列中裂隙位置(上部中央),JS 控制强度/尺寸 */
+.rift-glow {
+  position: absolute;
+  left: 50%; top: 21%;
+  width: 250px; height: 150px;
+  transform: translate(-50%, -50%) scale(1);
+  background: radial-gradient(ellipse, rgba(176, 124, 255, 0.42), rgba(255, 91, 110, 0.12) 55%, transparent 75%);
+  filter: blur(7px);
+  pointer-events: none;
+  z-index: 1;
+  transition: transform 0.9s ease, opacity 0.9s ease;
+}
+/* 失败崩塌:红色 vignette 脉动 */
+.stage.collapse::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  border-radius: 18px;
+  background: radial-gradient(ellipse at 50% 26%, rgba(255, 32, 64, 0.32), transparent 72%);
+  animation: dangerPulse 0.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* 裂隙 SVG(已退役,由序列帧接管;规则保留无引用) */
 .rift {
   position: absolute;
   inset: 0;
@@ -897,7 +930,7 @@ body::before {
   0% { opacity: 0; transform: translate(0, 0); }
   12% { opacity: 0.85; }
   78% { opacity: 0.45; }
-  100% { opacity: 0; transform: translate(var(--dx, 0px), -130px); }
+  100% { opacity: 0; transform: translate(var(--dx, 0px), var(--dy, -130px)); }
 }
 
 /* 卡面装饰内框(子元素,避开 ::before/::after 占用) */

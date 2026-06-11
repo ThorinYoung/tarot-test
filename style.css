@@ -1317,3 +1317,46 @@ body::before {
 /* 标题页最佳纪录 */
 .best-tag { font-size: 10.5px; color: var(--ink-dim); letter-spacing: 0.08em; margin-left: 8px; }
 .shop-item.cant { pointer-events: none; }
+
+/* ====== 宫廷牌 · 男主驰援(v0.6,取代双象牌) ====== */
+.assist-slot {
+  width: 52px; height: 64px; flex: none;
+  border-radius: 9px;
+  border: 1.5px dashed rgba(216, 180, 106, 0.35);
+  background: rgba(13, 18, 38, 0.7);
+  color: var(--ink-dim);
+  cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px;
+  font-family: var(--serif);
+  transition: transform 0.12s ease, border-color 0.25s ease, box-shadow 0.3s ease;
+  position: relative;
+  padding: 0;
+}
+.assist-slot:active { transform: scale(0.93); }
+.assist-slot .as-empty { font-size: 13px; letter-spacing: 0.1em; opacity: 0.55; }
+.assist-slot.filled {
+  border-style: solid;
+  border-color: currentColor;
+  box-shadow: 0 0 12px -2px currentColor;
+  background: rgba(13, 18, 38, 0.92);
+}
+.assist-slot .as-rank { font-size: 15px; font-weight: 700; letter-spacing: 0.05em; line-height: 1; }
+.assist-slot .as-svg { width: 20px; height: 20px; stroke: currentColor; }
+.assist-slot .as-tag {
+  position: absolute; top: -7px; right: -7px;
+  font-size: 9px; letter-spacing: 0.06em;
+  background: #0a0e20; border: 1px solid currentColor;
+  border-radius: 8px; padding: 1px 5px;
+}
+.assist-slot.filled { animation: assistReady 2s ease-in-out infinite; }
+@keyframes assistReady {
+  0%, 100% { box-shadow: 0 0 8px -2px currentColor; }
+  50% { box-shadow: 0 0 18px -1px currentColor; }
+}
+.assist-slot.arrive { animation: assistArrive 0.7s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes assistArrive {
+  0% { transform: scale(0.4) rotate(-12deg); opacity: 0; }
+  60% { transform: scale(1.15) rotate(3deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); }
+}

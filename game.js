@@ -1,8 +1,9 @@
 /* ==========================================================
    星轨裁决 · 内部演示 v0.5
-   规则依据:docs/04(§14 玩法深度版本路线 V1-V4)
-   Ⅰ 剧情内简单版 / Ⅱ +双象牌 / Ⅲ +牌强化 / Ⅳ 完整版·逆位
+   规则依据:docs/04(§14 玩法深度版本路线 V1-V4 + §14.1 宫廷牌)
+   Ⅰ 剧情内简单版 / Ⅱ +宫廷牌·男主驰援 / Ⅲ +牌铭刻 / Ⅳ 完整版·逆位
    v0.5 经济与构筑层:星屑 / 星象集市 / 命运签 / 稀有度 / 剧情委托 / 天象
+   v0.6 宫廷牌·男主驰援(取代双象牌——docs/04 §14.1 拍板)
    ========================================================== */
 "use strict";
 
@@ -146,9 +147,42 @@ const WEATHERS = [
   { key: "dusk",   name: "薄暮",   desc: "每层第一次校准 共鸣 ×1.25" },
 ];
 
-/* 双象牌(V2):4 种花色组合 × 4 星阶 */
-const DUAL_PAIRS = [["wand", "coin"], ["sword", "cup"], ["wand", "cup"], ["coin", "sword"]];
-const DUAL_RANKS = [2, 4, 6, 8];
+/* 宫廷牌·男主驰援(V2,docs/04 §14.1):不进牌库(数字库恒定),
+   打出②批次以上裁决式时驻场男主送牌至驰援位(存 1,每层保底 1 次),点击发动。
+   等级定机制族(侍从=即时资源/骑士=下一手/王后=本层持续/国王=爆发),花色定方向;等级随层深上浮 */
+const COURT_RANKS = { page: "侍从", knight: "骑士", queen: "王后", king: "国王" };
+const COURT_FX = {
+  page: {
+    wand:  { desc: "本层 校准 +1" },
+    coin:  { desc: "+15 星屑" },
+    sword: { desc: "本层 重引 +2" },
+    cup:   { desc: "整手印记免费弃换" },
+  },
+  knight: {
+    wand:  { desc: "下一手 倍率 +3" },
+    coin:  { desc: "下一手 底分 +12" },
+    sword: { desc: "下一手 每张印记 星阶 +1" },
+    cup:   { desc: "下一手 共鸣 ×1.5" },
+  },
+  queen: {
+    wand:  { desc: "本层 同辉系 倍率 +2" },
+    coin:  { desc: "本层 每手 底分 +8" },
+    sword: { desc: "本层 连星系 倍率 +2" },
+    cup:   { desc: "本层 每手 共鸣 ×1.2" },
+  },
+  king: {
+    wand:  { desc: "立即缝合 阈值 20% 的裂隙" },
+    coin:  { desc: "+40 星屑" },
+    sword: { desc: "下一手 共鸣 ×2" },
+    cup:   { desc: "重引回满,且下一手 ×1.5" },
+  },
+};
+const COURT_SEND = {
+  wand:  "接住——这张牌,带着我的火气。",
+  coin:  "追加投资。这张牌,记我账上。",
+  sword: "我算到你会需要它。拿去。",
+  cup:   "别逞强,这张牌替我陪你一会儿。",
+};
 
 const RULES = { handSize: 7, plays: 4, swaps: 3, maxPlay: 5, maxSwap: 3, arcanaUses: 1, revives: 1 };
 const REV_CHANCE = 0.35;
@@ -448,6 +482,23 @@ function scoreWith(cards, ev, peek = false) {
     if (S.weather.key === "dusk" && S.playsUsed === 0) { post *= 1.25; notes.push("薄暮 ×1.25"); }
   }
 
+  /* 宫廷驰援(V2):骑士/国王=下一手 buff;王后=本层持续 */
+  if (S.nextBuff) {
+    const b = S.nextBuff;
+    if (b.base) { base += b.base; notes.push(`驰援 +${b.base}`); }
+    if (b.perCard) { base += b.perCard * cards.length; notes.push(`驰援 +${b.perCard}/张`); }
+    if (b.mult) { mult += b.mult; notes.push(`驰援 ×+${b.mult}`); }
+    if (b.post) { post *= b.post; notes.push(`驰援 ×${b.post}`); }
+    if (!peek) S.nextBuff = null;
+  }
+  if (S.layerCourt) {
+    const lb = S.layerCourt;
+    if (lb.glowMult && GLOWS.includes(ev.key)) { mult += lb.glowMult; notes.push(`王后 ×+${lb.glowMult}`); }
+    if (lb.runMult && RUNS.includes(ev.key)) { mult += lb.runMult; notes.push(`王后 ×+${lb.runMult}`); }
+    if (lb.handBase) { base += lb.handBase; notes.push(`王后 +${lb.handBase}`); }
+    if (lb.handPost) { post *= lb.handPost; notes.push(`王后 ×${lb.handPost}`); }
+  }
+
   const cups = cards.filter((c, i) => ev.assign[i] === "cup").length;
   const wands = cards.filter((c, i) => ev.assign[i] === "wand").length;
 
@@ -577,16 +628,15 @@ const S = {
   commission: null, weather: null,
   gachaPity: 0, purges: 0, lastComboKey: null,
   freeSwapsUsed: 0,
+  /* v0.6 宫廷驰援 */
+  assist: null, assistGivenLayer: false,
+  nextBuff: null, layerCourt: null,
 };
 
 function buildRunDeck() {
+  /* 数字库恒定 40 张(§14.1:宫廷牌不进牌库,复杂度藏内容不藏规则) */
   const d = [];
   for (const s of SUIT_KEYS) for (let r = 1; r <= 10; r++) d.push({ suit: s, rank: r, id: `${s}-${r}` });
-  if (S.version >= 2) {
-    DUAL_PAIRS.forEach((pair, pi) => {
-      DUAL_RANKS.forEach(r => d.push({ suits: pair.slice(), rank: r, id: `dual-${pi}-${r}` }));
-    });
-  }
   /* 委托偏向:驻场双主的花色各额外混入 2 张(随机星阶) */
   if (S.commission) {
     S.commission.pair.forEach(s => {
@@ -884,6 +934,7 @@ async function onPlay() {
   sfx.seam();
   floatText(`+${sc.score}`, ev.tier);
   leadReaction(ev);
+  maybeCourtAssist(ev);
   renderCounters();
 
   await wait(1000);
@@ -1150,6 +1201,111 @@ function leadReaction(ev) {
   }
 }
 
+/* ---------------- 宫廷牌 · 男主驰援(V2) ---------------- */
+function courtRankFor(layer) {
+  const pool = layer <= 2 ? ["page", "page", "knight"]
+    : layer <= 4 ? ["page", "knight", "knight", "queen"]
+    : layer <= 6 ? ["knight", "queen", "queen", "king"]
+    : ["queen", "king"];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function renderAssist(arrive = false) {
+  const slot = $("btnAssist");
+  if (S.version < 2) { slot.style.display = "none"; return; }
+  slot.style.display = "flex";
+  if (!S.assist) {
+    slot.className = "assist-slot";
+    slot.style.color = "";
+    slot.innerHTML = `<span class="as-empty">驰援</span>`;
+    return;
+  }
+  const { rank, suit } = S.assist;
+  slot.className = "assist-slot filled" + (arrive ? " arrive" : "");
+  slot.style.color = SUITS[suit].color;
+  slot.innerHTML = `<span class="as-rank">${COURT_RANKS[rank]}</span>
+    <svg class="as-svg" viewBox="0 0 48 48" fill="none"><use href="${SUITS[suit].glyph}"/></svg>
+    <span class="as-tag">${LEADS[suit].name}</span>`;
+  if (arrive) setTimeout(() => slot.classList.remove("arrive"), 750);
+}
+
+/* 到牌:打出②批次以上且裂隙未稳时,驻场男主送牌(每层保底 1 次,其后 35% 概率;存 1) */
+function maybeCourtAssist(ev) {
+  if (S.version < 2 || S.assist || ev.tier < 2) return;
+  if (S.layerScore >= S.threshold) return;
+  const guaranteed = !S.assistGivenLayer;
+  if (!guaranteed && Math.random() > 0.35) return;
+  S.assistGivenLayer = true;
+  const pair = S.commission ? S.commission.pair : SUIT_KEYS;
+  const suit = (ev.suit && pair.includes(ev.suit)) ? ev.suit : pair[Math.floor(Math.random() * pair.length)];
+  const rank = courtRankFor(S.layer);
+  S.assist = { rank, suit };
+  renderAssist(true);
+  sfx.relic();
+  say(suit, `${COURT_SEND[suit]}<br><span style="color:var(--gold-bright)">【${SUITS[suit].name}${COURT_RANKS[rank]}】入驰援位——${COURT_FX[rank][suit].desc},点击发动。</span>`, 6500);
+}
+
+async function onAssist() {
+  if (S.busy) return;
+  if (!S.assist) {
+    if (S.version >= 2) say(null, "驰援位空着——打出②批次以上的裁决式,驻场男主会送牌支援。");
+    return;
+  }
+  const { rank, suit } = S.assist;
+  const fx = COURT_FX[rank][suit];
+  const name = `${SUITS[suit].name}${COURT_RANKS[rank]}`;
+  S.assist = null;
+  renderAssist();
+  sfx.play(2);
+  if (rank === "page") {
+    if (suit === "wand") S.plays += 1;
+    if (suit === "coin") gainDust(15);
+    if (suit === "sword") S.swaps += 2;
+    if (suit === "cup") {
+      S.busy = true;
+      [...$("hand").children].forEach(el => el.classList.add("swap-out"));
+      await wait(280);
+      const n = S.hand.length;
+      S.discard.push(...S.hand.splice(0));
+      S.hand = draw(n);
+      S.selected.clear();
+      S.busy = false;
+      renderHand();
+    }
+  } else if (rank === "knight") {
+    S.nextBuff = suit === "wand" ? { mult: 3 } : suit === "coin" ? { base: 12 }
+      : suit === "sword" ? { perCard: 1 } : { post: 1.5 };
+  } else if (rank === "queen") {
+    S.layerCourt = suit === "wand" ? { glowMult: 2 } : suit === "coin" ? { handBase: 8 }
+      : suit === "sword" ? { runMult: 2 } : { handPost: 1.2 };
+  } else { /* king */
+    if (suit === "wand") {
+      const gain = Math.round(S.threshold * 0.2);
+      const prev = S.layerScore;
+      S.layerScore += gain;
+      S.runScore += gain;
+      countUpMeter(prev, S.layerScore);
+      rift.update(S.layerScore / S.threshold);
+      sfx.seam();
+      floatText(`+${gain}`, 3);
+      if (S.layerScore >= S.threshold) {
+        S.busy = true;
+        say(suit, `「看好了。」${LEADS[suit].name}亲手缝上了裂隙的最后一寸。`);
+        sfx.clear();
+        await sealCelebration();
+        showLayerClear();
+        renderCounters();
+        return;
+      }
+    }
+    if (suit === "coin") gainDust(40);
+    if (suit === "sword") S.nextBuff = { post: 2 };
+    if (suit === "cup") { S.swaps = Math.max(S.swaps, RULES.swaps); S.nextBuff = { post: 1.5 }; }
+  }
+  say(suit, `【${name}】发动——${fx.desc}。`);
+  renderCounters(); applySelection();
+}
+
 /* ---------------- 金手指:命运之轮 ---------------- */
 async function onArcana() {
   if (S.busy || S.arcana <= 0) return;
@@ -1198,6 +1354,7 @@ function startLayer() {
   S.arcana = RULES.arcanaUses;
   S.layerScore = 0; S.playsUsed = 0; S.moonCharge = false; S.moonStack = 0;
   S.lastComboKey = null; S.freeSwapsUsed = 0;
+  S.assistGivenLayer = false; S.layerCourt = null;   /* 驰援牌与"下一手"buff 跨层保留 */
   S.busy = false;
   if (S.weather && S.weather.key === "wind") gainDust(8, true);
   $("meterNow").textContent = "0";
@@ -1205,7 +1362,7 @@ function startLayer() {
   $("constellation").innerHTML = "";
   $("comboBanner").className = "combo-banner";
   rift.build();
-  renderHand(); renderCounters(); renderRelics(); renderDust();
+  renderHand(); renderCounters(); renderRelics(); renderDust(); renderAssist();
   layerIntro();
   /* 驻场男主在委托双主间逐层轮换 + 开场台词 */
   dutyLead = S.commission ? S.commission.pair[(S.layer - 1) % 2]
@@ -1658,6 +1815,7 @@ function newRun() {
   /* v0.5 */
   S.dust = 30; S.dustEarned = 0;
   S.gachaPity = 0; S.purges = 0; S.lastComboKey = null;
+  S.assist = null; S.nextBuff = null; S.layerCourt = null;
   shopState = null;
   S.weather = WEATHERS[Math.floor(Math.random() * WEATHERS.length)];
   if (S.commission && S.commission.key === "bladeMercy") S.revives += 1;
@@ -1736,7 +1894,7 @@ function showCodexModal() {
   if (S.commission) ctx.push(`委托「${S.commission.title}」:${LEADS[S.commission.pair[0]].name} × ${LEADS[S.commission.pair[1]].name} —— 两人花色 底分 +1/张;${S.commission.perk}。`);
   if (S.weather) ctx.push(`天象「${S.weather.name}」:${S.weather.desc}。`);
   const extras = [];
-  if (S.version >= 2) extras.push("双象牌:同时属于两个花色,判定自动取最优归属。");
+  if (S.version >= 2) extras.push("宫廷牌·男主驰援:打出②批次以上,驻场男主送宫廷牌至左下驰援位(存 1,每层保底 1 次),点击发动;等级随层深上浮(侍从→骑士→王后→国王)。");
   if (S.version >= 3) extras.push("牌铭刻:◆ 标记的印记带永久铭刻(镶星/饰金/共鸣/回响/辉煌)。");
   if (S.version >= 4) extras.push("逆位异象(紫):更强,但伴随代价。");
   extras.push(`稀有度:<span class="rar-c">凡象</span> / <span class="rar-r">秘象</span> / <span class="rar-l">天启</span>——天启只在集市与命运签出现。`);
@@ -1824,7 +1982,7 @@ function showTitle() {
     <div class="sub">STARLIGHT VERDICT · 内部演示 v0.5</div>
     <p style="margin:14px 0 10px">巨大的裂隙悬在暮星城上空。<br>选择本次远征的玩法深度:</p>
     <button class="btn-main" id="v1">Ⅰ · 剧情内简单版(首测推荐)${bestOf(1)}</button>
-    <button class="btn-main btn-second" id="v2">Ⅱ · + 双象牌(4×4 双花色)${bestOf(2)}</button>
+    <button class="btn-main btn-second" id="v2">Ⅱ · + 宫廷牌·男主驰援${bestOf(2)}</button>
     <button class="btn-main btn-second" id="v3">Ⅲ · + 牌铭刻与铭刻卷${bestOf(3)}</button>
     <button class="btn-main btn-second" id="v4">Ⅳ · 完整版 · 异象逆位(硬核)${bestOf(4)}</button>
     <button class="btn-ghost" id="tStart">先看教学(以版本Ⅰ开始)</button>
@@ -1842,6 +2000,7 @@ function showTitle() {
 $("btnPlay").addEventListener("click", onPlay);
 $("btnSwap").addEventListener("click", onSwap);
 $("btnArcana").addEventListener("click", onArcana);
+$("btnAssist").addEventListener("click", onAssist);
 $("btnHelp").addEventListener("click", () => { if (!S.busy) showCodexModal(); });
 $("btnGuide").addEventListener("click", () => { if (!S.busy) showGuideModal(); });
 $("btnSound").addEventListener("click", function () {

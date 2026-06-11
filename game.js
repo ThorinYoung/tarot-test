@@ -1,7 +1,8 @@
 /* ==========================================================
-   星轨裁决 · 内部演示 v0.3
+   星轨裁决 · 内部演示 v0.5
    规则依据:docs/04(§14 玩法深度版本路线 V1-V4)
    Ⅰ 剧情内简单版 / Ⅱ +双象牌 / Ⅲ +牌强化 / Ⅳ 完整版·逆位
+   v0.5 经济与构筑层:星屑 / 星象集市 / 命运签 / 稀有度 / 剧情委托 / 天象
    ========================================================== */
 "use strict";
 
@@ -40,48 +41,110 @@ const GLOWS = ["glow3", "glow5", "radiantRun"];
 const RUNS = ["run3", "run5", "radiantRun"];
 const RANKS = ["pairSeal", "twinSeal", "triPhase", "fullPhase"];
 
+/* 稀有度 */
+const RARITY = {
+  c: { key: "c", name: "凡象", color: "#9fb4d8", w: 60 },
+  r: { key: "r", name: "秘象", color: "#f0c75e", w: 30 },
+  l: { key: "l", name: "天启", color: "#d29bff", w: 10 },
+};
+const RELIC_PRICE = { c: 25, r: 45, l: 70 };
+const ENH_PRICE   = { c: 18, r: 32, l: 55 };
+
 /* 异象(大阿卡纳被动)— 正位 + 逆位(V4) */
 const RELICS = [
-  { key: "star",       name: "星辰",   icon: "#rg-star",
+  { key: "star",       name: "星辰",   icon: "#rg-star", rar: "c",
     desc: "圣杯印记 星阶 +2",
     rdesc: "圣杯印记 星阶 +4;但不含圣杯的组合 底分 -3" },
-  { key: "sun",        name: "太阳",   icon: "#rg-sun",
+  { key: "sun",        name: "太阳",   icon: "#rg-sun", rar: "r",
     desc: "同辉系裁决式 倍率 +2",
     rdesc: "同辉系 倍率 +5;但其余组合 倍率 -1" },
-  { key: "moon",       name: "月亮",   icon: "#rg-moon",
+  { key: "moon",       name: "月亮",   icon: "#rg-moon", rar: "r",
     desc: "每次重引后,下一手共鸣 ×1.5",
     rdesc: "每次重引使本层乘区永久 +0.25;但每层重引次数 -1" },
-  { key: "strength",   name: "力量",   icon: "#rg-strength",
+  { key: "strength",   name: "力量",   icon: "#rg-strength", rar: "c",
     desc: "权杖印记 星阶 +2",
     rdesc: "权杖印记 星阶 +4;但不含权杖的组合 底分 -3" },
-  { key: "emperor",    name: "皇帝",   icon: "#rg-emperor",
+  { key: "emperor",    name: "皇帝",   icon: "#rg-emperor", rar: "r",
     desc: "同阶系裁决式(对印/双对/三相/满相)倍率 +2",
     rdesc: "同阶系 倍率 +4;但连星系 倍率 -2" },
-  { key: "hermit",     name: "隐者",   icon: "#rg-hermit",
+  { key: "hermit",     name: "隐者",   icon: "#rg-hermit", rar: "c",
     desc: "打出 ≤3 张时 倍率 +1",
     rdesc: "打出 ≤2 张时 倍率 +3;但打出 ≥4 张时 倍率 -1" },
-  { key: "justice",    name: "正义",   icon: "#rg-justice",
+  { key: "justice",    name: "正义",   icon: "#rg-justice", rar: "l",
     desc: "四象共鸣 倍率 +4",
     rdesc: "四象共鸣 倍率 +8;但双对印 倍率 -2" },
-  { key: "temperance", name: "节制",   icon: "#rg-temperance",
+  { key: "temperance", name: "节制",   icon: "#rg-temperance", rar: "r",
     desc: "连星系裁决式 倍率 +2",
     rdesc: "连星系 倍率 +4;但同辉系 倍率 -2" },
-  { key: "magician",   name: "魔术师", icon: "#rg-magician",
+  { key: "magician",   name: "魔术师", icon: "#rg-magician", rar: "c",
     desc: "散星不再寒酸:倍率至少 ×2",
     rdesc: "散星 倍率 ×3;但批次①(对印/连星·三)倍率 -1" },
-  { key: "empress",    name: "女皇",   icon: "#rg-empress",
+  { key: "empress",    name: "女皇",   icon: "#rg-empress", rar: "r",
     desc: "每层第一次校准 共鸣 ×2",
     rdesc: "每层第一次校准 ×3;但最后一次校准 ×0.5" },
+  /* v0.5 新增 */
+  { key: "lovers",     name: "恋人",   icon: "#rg-lovers", rar: "l",
+    desc: "恰好打出 2 张印记时 倍率 +6",
+    rdesc: "恰好 2 张 倍率 +9;但打出 ≥4 张 倍率 -2" },
+  { key: "world",      name: "世界",   icon: "#rg-world", rar: "l",
+    desc: "每持有 1 个其他异象,倍率 +1",
+    rdesc: "每持有 1 个其他异象 倍率 +2;但每层星屑报酬 -10" },
+  { key: "death",      name: "死神",   icon: "#rg-death", rar: "r",
+    desc: "每析灭(删除)1 张牌,全局底分永久 +2",
+    rdesc: "每析灭 1 张 底分 +4;但集市析灭价格翻倍" },
+  { key: "chariot",    name: "战车",   icon: "#rg-chariot", rar: "r",
+    desc: "与上一手相同裁决式时 共鸣 ×1.5",
+    rdesc: "相同裁决式 ×2;但不同时 ×0.9" },
+  { key: "hierophant", name: "教皇",   icon: "#rg-hierophant", rar: "c",
+    desc: "每打出 1 张铭刻牌,倍率 +1",
+    rdesc: "铭刻牌 倍率 +2/张;但无铭刻牌的手 底分 -2" },
+  { key: "hanged",     name: "倒吊人", icon: "#rg-hanged", rar: "c",
+    desc: "每层第一次重引不消耗次数",
+    rdesc: "每层前两次重引免费;但每层校准 -1" },
 ];
 const RELIC_MAP = Object.fromEntries(RELICS.map(r => [r.key, r]));
 
-/* 牌强化(V3) */
+/* 牌强化(V3)— v0.5 分稀有度 */
 const ENHANCEMENTS = {
-  starset:  { name: "镶星", desc: "打出时 星阶 +2",     color: "#8fc2ff" },
-  gilded:   { name: "饰金", desc: "打出时 倍率 +1",     color: "#f0c75e" },
-  resonant: { name: "共鸣", desc: "可视为任意花色",     color: "#c08dff" },
-  echo:     { name: "回响", desc: "打出时 星阶计两次", color: "#7fd6c2" },
+  starset:  { name: "镶星", desc: "打出时 星阶 +2",     color: "#8fc2ff", rar: "c" },
+  gilded:   { name: "饰金", desc: "打出时 倍率 +1",     color: "#f0c75e", rar: "c" },
+  resonant: { name: "共鸣", desc: "可视为任意花色",     color: "#c08dff", rar: "r" },
+  echo:     { name: "回响", desc: "打出时 星阶计两次", color: "#7fd6c2", rar: "r" },
+  radiant:  { name: "辉煌", desc: "打出时 星阶 +2 且 倍率 +2", color: "#ff9de2", rar: "l" },
 };
+
+/* 剧情委托(v0.5):每次远征由两位男主驻场,决定牌库偏向与专属祝福。
+   正式版此处由当前剧情章节决定驻场组合 —— demo 用随机二选一模拟。 */
+const COMMISSIONS = [
+  { key: "blazeBlade", pair: ["wand", "sword"], title: "锋焰协奏", scene: "危楼天台 · 裂隙在两人头顶交错",
+    perk: "权杖/宝剑的同辉系 倍率 +1",
+    intro: [["wand", "这道裂隙归我们俩管——你负责选,我负责赢。"], ["sword", "情报显示今晚星轨偏锋……正好,我想看你出招。"]] },
+  { key: "ledgerNight", pair: ["coin", "cup"], title: "深夜账房", scene: "事务所灯下 · 账册间浮起星屑",
+    perk: "每层星屑报酬 +6",
+    intro: [["coin", "委托费我已记在账上——这一次,我们亲自押送。"], ["cup", "夜里冷,我泡了茶。慢慢打,我们不赶时间。"]] },
+  { key: "flameTide", pair: ["wand", "cup"], title: "焰与潮", scene: "海雾码头 · 裂隙倒映在潮面",
+    perk: "每层重引 +1",
+    intro: [["wand", "海风太吵了——还好,你的星轨够亮。"], ["cup", "别怕走错,潮水会把你送回正确的位置。"]] },
+  { key: "coldGambit", pair: ["coin", "sword"], title: "冷局推演", scene: "星图议事厅 · 沙盘上裂隙缓缓张开",
+    perk: "对印/双对印 倍率 +1",
+    intro: [["sword", "我推演了十七种打法。但我更想看你的第十八种。"], ["coin", "风险已对冲。剩下的,交给你的直觉。"]] },
+  { key: "giltPact", pair: ["wand", "coin"], title: "燃金之约", scene: "拍卖会后巷 · 火光与金粉齐飞",
+    perk: "集市升阶 半价",
+    intro: [["wand", "他出钱,我出火——你只管赢得漂亮。"], ["coin", "预算充足。今晚,星阶随你升。"]] },
+  { key: "bladeMercy", pair: ["sword", "cup"], title: "刃上温柔", scene: "医院顶层 · 裂隙悬在静谧夜空",
+    perk: "回响复活 +1 次",
+    intro: [["sword", "我守外侧。有我在,你不会输第二次。"], ["cup", "就算溃散也没关系——我接得住你。"]] },
+];
+
+/* 天象(v0.5):每次远征随机一种,全程生效 */
+const WEATHERS = [
+  { key: "meteor", name: "流星雨", desc: "连星系裁决式 倍率 +1" },
+  { key: "still",  name: "静夜",   desc: "每层重引 +1" },
+  { key: "tide",   name: "引力潮", desc: "稳定阈值 +20%,但星屑报酬 ×1.5" },
+  { key: "halo",   name: "月晕",   desc: "命运签 价格 -10" },
+  { key: "wind",   name: "星尘风", desc: "每层开始时 +8 星屑" },
+  { key: "dusk",   name: "薄暮",   desc: "每层第一次校准 共鸣 ×1.25" },
+];
 
 /* 双象牌(V2):4 种花色组合 × 4 星阶 */
 const DUAL_PAIRS = [["wand", "coin"], ["sword", "cup"], ["wand", "cup"], ["coin", "sword"]];
@@ -246,6 +309,13 @@ const sfx = (() => {
     fail() { tone(196, 0, 0.4, "sawtooth", 0.08); tone(155.6, 0.15, 0.5, "sawtooth", 0.08); },
     clear() { [0, 2, 4, 5].forEach((p, i) => tone(PENTA[p], i * 0.1, 0.45, "triangle", 0.12)); },
     wheel() { for (let i = 0; i < 8; i++) tone(300 + i * 90, i * 0.09, 0.1, "square", 0.04); tone(1046, 0.78, 0.5, "sine", 0.12); },
+    coin() { tone(987.77, 0, 0.07, "triangle", 0.1); tone(1318.5, 0.06, 0.16, "triangle", 0.12); },
+    gachaRoll() { for (let i = 0; i < 6; i++) tone(440 + Math.random() * 500, i * 0.11, 0.08, "triangle", 0.05); },
+    gachaHit(rar) {
+      if (rar === "l") { [0, 2, 4, 5].forEach((p, i) => tone(PENTA[p] * 2, 0.05 + i * 0.09, 0.5, "triangle", 0.12)); tone(PENTA[5] * 2, 0.5, 0.8, "sine", 0.1); }
+      else if (rar === "r") { [2, 4, 5].forEach((p, i) => tone(PENTA[p], i * 0.09, 0.4, "triangle", 0.11)); }
+      else { tone(PENTA[2], 0, 0.2, "triangle", 0.1); tone(PENTA[3], 0.1, 0.3, "triangle", 0.09); }
+    },
   };
 })();
 
@@ -360,6 +430,22 @@ function scoreWith(cards, ev, peek = false) {
     if (c.enh === "starset") { base += 2; notes.push("镶星 +2"); }
     if (c.enh === "echo") { base += c.rank; notes.push(`回响 +${c.rank}`); }
     if (c.enh === "gilded") { mult += 1; notes.push("饰金 ×+1"); }
+    if (c.enh === "radiant") { base += 2; mult += 2; notes.push("辉煌 +2 ×+2"); }
+  }
+
+  /* 剧情委托:驻场双主的花色印记 底分 +1/张 + 专属祝福 */
+  if (S.commission) {
+    const cm = S.commission;
+    const pairN = cards.filter((c, i) => cm.pair.includes(ev.assign[i])).length;
+    if (pairN > 0) { base += pairN; notes.push(`委托 +${pairN}`); }
+    if (cm.key === "blazeBlade" && GLOWS.includes(ev.key) && cm.pair.includes(ev.suit)) { mult += 1; notes.push("锋焰 ×+1"); }
+    if (cm.key === "coldGambit" && (ev.key === "pairSeal" || ev.key === "twinSeal")) { mult += 1; notes.push("冷局 ×+1"); }
+  }
+
+  /* 天象 */
+  if (S.weather) {
+    if (S.weather.key === "meteor" && RUNS.includes(ev.key)) { mult += 1; notes.push("流星雨 ×+1"); }
+    if (S.weather.key === "dusk" && S.playsUsed === 0) { post *= 1.25; notes.push("薄暮 ×1.25"); }
   }
 
   const cups = cards.filter((c, i) => ev.assign[i] === "cup").length;
@@ -426,6 +512,33 @@ function scoreWith(cards, ev, peek = false) {
     if (!moon.rev && S.moonCharge) { post *= 1.5; notes.push("月亮 ×1.5"); if (!peek) S.moonCharge = false; }
     if (moon.rev && S.moonStack > 0) { post *= 1 + S.moonStack; notes.push(`月亮·逆 ×${(1 + S.moonStack).toFixed(2)}`); }
   }
+  /* v0.5 新增异象 */
+  const lov = relicOf("lovers");
+  if (lov) {
+    if (cards.length === 2) { mult += lov.rev ? 9 : 6; notes.push(lov.rev ? "恋人·逆 ×+9" : "恋人 ×+6"); }
+    else if (lov.rev && cards.length >= 4) { mult -= 2; minM(); notes.push("恋人·逆 ×-2"); }
+  }
+  const wld = relicOf("world");
+  if (wld && S.relics.length > 1) {
+    const n = (S.relics.length - 1) * (wld.rev ? 2 : 1);
+    mult += n; notes.push(`${wld.rev ? "世界·逆" : "世界"} ×+${n}`);
+  }
+  const dth = relicOf("death");
+  if (dth && S.purges > 0) {
+    const n = S.purges * (dth.rev ? 4 : 2);
+    base += n; notes.push(`${dth.rev ? "死神·逆" : "死神"} +${n}`);
+  }
+  const cha = relicOf("chariot");
+  if (cha && S.lastComboKey) {
+    if (ev.key === S.lastComboKey) { post *= cha.rev ? 2 : 1.5; notes.push(cha.rev ? "战车·逆 ×2" : "战车 ×1.5"); }
+    else if (cha.rev) { post *= 0.9; notes.push("战车·逆 ×0.9"); }
+  }
+  const hie = relicOf("hierophant");
+  if (hie) {
+    const enhN = cards.filter(c => c.enh).length;
+    if (enhN > 0) { mult += enhN * (hie.rev ? 2 : 1); notes.push(`教皇 ×+${enhN * (hie.rev ? 2 : 1)}`); }
+    else if (hie.rev) { base = Math.max(1, base - 2); notes.push("教皇·逆 -2"); }
+  }
 
   return { base, mult, post, notes, score: Math.round(base * mult * post) };
 }
@@ -459,6 +572,11 @@ const S = {
   runScore: 0, bestPlay: null, lit: new Set(),
   guide: "strong",
   busy: false, started: false,
+  /* v0.5 经济与构筑 */
+  dust: 0, dustEarned: 0,
+  commission: null, weather: null,
+  gachaPity: 0, purges: 0, lastComboKey: null,
+  freeSwapsUsed: 0,
 };
 
 function buildRunDeck() {
@@ -469,7 +587,39 @@ function buildRunDeck() {
       DUAL_RANKS.forEach(r => d.push({ suits: pair.slice(), rank: r, id: `dual-${pi}-${r}` }));
     });
   }
+  /* 委托偏向:驻场双主的花色各额外混入 2 张(随机星阶) */
+  if (S.commission) {
+    S.commission.pair.forEach(s => {
+      for (let i = 0; i < 2; i++) {
+        const r = 1 + Math.floor(Math.random() * 10);
+        d.push({ suit: s, rank: r, id: `cm-${s}-${i}` });
+      }
+    });
+  }
   return d;
+}
+
+/* ---------------- 星屑经济 ---------------- */
+function renderDust() { const el = $("dustHud"); if (el) el.textContent = `✦ ${S.dust}`; }
+function gainDust(n, silent = false) {
+  S.dust += n;
+  if (n > 0) S.dustEarned += n;
+  renderDust();
+  if (!silent && n > 0) { bumpEl($("dustHud")); sfx.coin(); }
+}
+/* 过层报酬:基础 + 剩余行动折算 + 溢出奖励(天象/委托/异象修正) */
+function rewardFor() {
+  const parts = [];
+  let n = 15; parts.push(["稳定裂隙", 15]);
+  if (S.plays > 0)  { parts.push([`剩余校准 ×${S.plays}`, S.plays * 5]); n += S.plays * 5; }
+  if (S.swaps > 0)  { parts.push([`剩余重引 ×${S.swaps}`, S.swaps * 3]); n += S.swaps * 3; }
+  const over = Math.min(12, Math.floor((S.layerScore / S.threshold - 1) * 20));
+  if (over > 0) { parts.push(["溢出共鸣", over]); n += over; }
+  if (S.commission && S.commission.key === "ledgerNight") { parts.push(["深夜账房", 6]); n += 6; }
+  if (S.weather && S.weather.key === "tide") { const b = Math.round(n * 0.5); parts.push(["引力潮 ×1.5", b]); n += b; }
+  const wld = relicOf("world");
+  if (wld && wld.rev) { parts.push(["世界·逆", -10]); n = Math.max(0, n - 10); }
+  return { total: n, parts };
 }
 function draw(count) {
   const out = [];
@@ -681,7 +831,16 @@ async function onSwap() {
     say(null, `重引受限——一次最多弃换 ${RULES.maxSwap} 张,请减少选择。`);
     return;
   }
-  S.busy = true; S.swaps--;
+  S.busy = true;
+  /* 倒吊人:每层第一次(逆位:前两次)重引免费 */
+  const hng = relicOf("hanged");
+  const freeQuota = hng ? (hng.rev ? 2 : 1) : 0;
+  if (S.freeSwapsUsed < freeQuota) {
+    S.freeSwapsUsed++;
+    say(null, "「倒吊人」倒转因果——这次重引,不计次数。");
+  } else {
+    S.swaps--;
+  }
   sfx.swap();
   const idxs = [...S.selected].sort((a, b) => b - a);
   const els = $("hand").children;
@@ -717,6 +876,7 @@ async function onPlay() {
   const prev = S.layerScore;
   S.layerScore += sc.score;
   S.runScore += sc.score;
+  S.lastComboKey = ev.key;
   if (!S.bestPlay || sc.score > S.bestPlay.score) S.bestPlay = { score: sc.score, name: ev.name };
   if (ev.key !== "stray") S.lit.add(ev.key);
   countUpMeter(prev, S.layerScore);
@@ -934,9 +1094,11 @@ async function sealCelebration() {
 function layerIntro() {
   const intro = document.createElement("div");
   intro.className = "layer-intro";
-  intro.innerHTML = `<div class="li-name">${layerLabel(S.layer)}</div><div class="li-goal">稳定阈值 ${S.threshold}</div>`;
+  const wLine = S.weather ? `<div class="li-weather">天象 · ${S.weather.name}:${S.weather.desc}</div>` : "";
+  const cmLine = S.commission ? `<div class="li-weather" style="color:var(--gold)">委托「${S.commission.title}」· ${LEADS[S.commission.pair[0]].name} × ${LEADS[S.commission.pair[1]].name}</div>` : "";
+  intro.innerHTML = `<div class="li-name">${layerLabel(S.layer)}</div><div class="li-goal">稳定阈值 ${S.threshold}</div>${cmLine}${wLine}`;
   $("stage").appendChild(intro);
-  setTimeout(() => intro.remove(), 1700);
+  setTimeout(() => intro.remove(), 1900);
 }
 
 /* ====== 男主对话位:say() 系统 ====== */
@@ -976,8 +1138,13 @@ function leadReaction(ev) {
   if (ev.key === "tetra") {
     say(null, "四象共鸣——四道星轨,同时为你亮起。");
   } else if (ev.suit && GLOWS.includes(ev.key)) {
-    const lead = LEADS[ev.suit];
-    say(ev.suit, lead.lines[Math.floor(Math.random() * lead.lines.length)]);
+    /* 驻场双主亲自反馈;缺席的男主隔着星海回应(剧情感:他不在这一章) */
+    if (S.commission && !S.commission.pair.includes(ev.suit)) {
+      say(null, `远方的「${LEADS[ev.suit].name}」隔着星海应了一声——他的星轨为你微亮。`);
+    } else {
+      const lead = LEADS[ev.suit];
+      say(ev.suit, lead.lines[Math.floor(Math.random() * lead.lines.length)]);
+    }
   } else if (ev.key === "fullPhase") {
     say(null, "星盘震颤——四枚同阶印记,命运罕见地整齐。");
   }
@@ -1016,82 +1183,140 @@ async function onArcana() {
 /* ---------------- 层级流转 ---------------- */
 function startLayer() {
   S.threshold = thresholdOf(S.layer);
+  if (S.weather && S.weather.key === "tide") S.threshold = Math.round((S.threshold * 1.2) / 5) * 5;
   S.deck = shuffle([...S.runDeck]);
   S.discard = [];
   S.hand = draw(RULES.handSize);
   S.selected.clear();
   S.plays = RULES.plays;
+  const hng = relicOf("hanged");
+  if (hng && hng.rev) S.plays -= 1;
   const moon = relicOf("moon");
-  S.swaps = RULES.swaps - (moon && moon.rev ? 1 : 0);
+  S.swaps = RULES.swaps - (moon && moon.rev ? 1 : 0)
+    + (S.weather && S.weather.key === "still" ? 1 : 0)
+    + (S.commission && S.commission.key === "flameTide" ? 1 : 0);
   S.arcana = RULES.arcanaUses;
   S.layerScore = 0; S.playsUsed = 0; S.moonCharge = false; S.moonStack = 0;
+  S.lastComboKey = null; S.freeSwapsUsed = 0;
   S.busy = false;
+  if (S.weather && S.weather.key === "wind") gainDust(8, true);
   $("meterNow").textContent = "0";
   $("playedCards").innerHTML = "";
   $("constellation").innerHTML = "";
   $("comboBanner").className = "combo-banner";
   rift.build();
-  renderHand(); renderCounters(); renderRelics();
+  renderHand(); renderCounters(); renderRelics(); renderDust();
   layerIntro();
-  /* 驻场男主轮换 + 开场台词 */
-  dutyLead = SUIT_KEYS[Math.floor(Math.random() * 4)];
+  /* 驻场男主在委托双主间逐层轮换 + 开场台词 */
+  dutyLead = S.commission ? S.commission.pair[(S.layer - 1) % 2]
+    : SUIT_KEYS[Math.floor(Math.random() * 4)];
   setTimeout(idleLine, 900);
 }
 
-/* 过层奖励:V1/V2 = 3 异象;V3+ = 2 异象 + 1 牌强化;V4 异象可逆位 */
+/* ====== v0.5 过层流程:结算(星屑)→ 免费回赠 → 星象集市 → 下一层 ====== */
+function nextLayer() { closeModal(); S.layer++; startLayer(); }
+
+function rarBadge(rar) { return `<span class="rar-tag rar-${rar}">${RARITY[rar].name}</span>`; }
+function rollRarity(weights) {
+  const w = weights || { c: 55, r: 35, l: 10 };
+  let roll = Math.random() * (w.c + w.r + w.l);
+  if ((roll -= w.c) < 0) return "c";
+  if ((roll -= w.r) < 0) return "r";
+  return "l";
+}
+function unownedRelics(rar) {
+  const pool = RELICS.filter(r => !S.relics.some(o => o.key === r.key));
+  if (!rar) return pool;
+  return pool.filter(r => r.rar === rar);
+}
+function spendDust(n) {
+  if (S.dust < n) { say(null, `星屑不足——还差 ${n - S.dust} ✦。稳定更多裂隙吧。`); return false; }
+  S.dust -= n; renderDust(); sfx.coin();
+  return true;
+}
+function grantRelic(key, rev) {
+  S.relics.push({ key, rev: !!rev });
+  rev ? sfx.rev() : sfx.relic();
+  renderRelics();
+}
+
+/* 过层结算:星级 + 星屑报酬明细 + 免费回赠三选一 */
 function showLayerClear() {
   const ratio = S.layerScore / S.threshold;
   const stars = ratio >= 2 ? 3 : ratio >= 1.5 ? 2 : 1;
-  const pool = RELICS.filter(r => !S.relics.some(o => o.key === r.key));
-  const relicN = S.version >= 3 ? 2 : 3;
-  const offer = shuffle(pool.slice()).slice(0, relicN).map(r => ({
-    type: "relic", key: r.key,
-    rev: S.version >= 4 && Math.random() < REV_CHANCE,
-  }));
+  const reward = rewardFor();
+  gainDust(reward.total, true);
+  sfx.coin();
+
+  /* 免费回赠(凡象/秘象池;天启只在集市与命运签出现) */
+  const offer = [];
+  const freePool = shuffle(unownedRelics().filter(r => r.rar !== "l"));
+  if (freePool[0]) offer.push({ type: "relic", key: freePool[0].key, rev: S.version >= 4 && Math.random() < REV_CHANCE });
   if (S.version >= 3) {
-    const ekeys = shuffle(Object.keys(ENHANCEMENTS)).slice(0, 1);
-    ekeys.forEach(k => offer.push({ type: "enh", ekey: k }));
+    const ek = shuffle(Object.keys(ENHANCEMENTS).filter(k => ENHANCEMENTS[k].rar !== "l"))[0];
+    offer.push({ type: "enh", ekey: ek });
+  } else if (freePool[1]) {
+    offer.push({ type: "relic", key: freePool[1].key, rev: S.version >= 4 && Math.random() < REV_CHANCE });
   }
+  offer.push({ type: "dust", n: 25 });
+
   const offerHtml = offer.map((o, i) => {
     if (o.type === "relic") {
       const def = RELIC_MAP[o.key];
-      return `<button class="relic-pick${o.rev ? " reversed" : ""}" data-i="${i}">
+      return `<button class="relic-pick rl-${def.rar}${o.rev ? " reversed" : ""}" data-i="${i}">
         <span class="rp-icon"><svg viewBox="0 0 24 24"><use href="${def.icon}"/></svg></span>
-        <span><span class="rp-name">${def.name}${o.rev ? "·逆" : ""}</span><div class="rp-desc">${o.rev ? def.rdesc : def.desc}</div></span>
+        <span><span class="rp-name">${def.name}${o.rev ? "·逆" : ""}</span>${rarBadge(def.rar)}<div class="rp-desc">${o.rev ? def.rdesc : def.desc}</div></span>
       </button>`;
     }
-    const e = ENHANCEMENTS[o.ekey];
-    return `<button class="relic-pick enh" data-i="${i}">
-      <span class="rp-icon" style="color:${e.color};border-color:${e.color}">◆</span>
-      <span><span class="rp-name" style="color:${e.color}">牌强化 · ${e.name}</span><div class="rp-desc">${e.desc} —— 从牌库抽 5 张,铭刻其一</div></span>
+    if (o.type === "enh") {
+      const e = ENHANCEMENTS[o.ekey];
+      return `<button class="relic-pick enh rl-${e.rar}" data-i="${i}">
+        <span class="rp-icon" style="color:${e.color};border-color:${e.color}">◆</span>
+        <span><span class="rp-name" style="color:${e.color}">铭刻 · ${e.name}</span>${rarBadge(e.rar)}<div class="rp-desc">${e.desc} —— 从牌库抽 5 张,铭刻其一</div></span>
+      </button>`;
+    }
+    return `<button class="relic-pick" data-i="${i}">
+      <span class="rp-icon">✦</span>
+      <span><span class="rp-name">星屑袋</span><div class="rp-desc">+${o.n} 星屑,留着去集市挥霍</div></span>
     </button>`;
   }).join("");
+
+  const rewardHtml = reward.parts.map(([k, v]) =>
+    `<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink-dim);padding:1px 8px"><span>${k}</span><span style="color:var(--gold-bright)">${v > 0 ? "+" : ""}${v} ✦</span></div>`).join("");
+
   openModal(`
     <h2>裂隙稳定</h2>
     <div class="sub">${layerLabel(S.layer)} · 共鸣 ${S.layerScore}/${S.threshold}</div>
     <div class="stars">${[0, 1, 2].map(i => `<span class="star-pop" style="animation-delay:${0.15 + i * 0.18}s">${i < stars ? "★" : "☆"}</span>`).join("")}</div>
-    ${offer.length ? `<p class="dim" style="margin-top:6px">裂隙深处传来回赠——选取其一:</p>${offerHtml}` : `<p class="dim">回赠已全部收集。</p>`}
-    <button class="btn-ghost" id="mSkip">不取,直接深入下一层</button>
+    <div style="margin:8px 0;border:1px solid rgba(216,180,106,0.2);border-radius:10px;padding:7px 4px">
+      ${rewardHtml}
+      <div style="display:flex;justify-content:space-between;font-family:var(--serif);font-size:14px;padding:4px 8px 1px;border-top:1px solid rgba(216,180,106,0.18);margin-top:4px"><span>星屑报酬</span><span style="color:var(--gold-bright)">+${reward.total} ✦</span></div>
+    </div>
+    <p class="dim" style="margin-top:6px">裂隙深处传来回赠——选取其一:</p>${offerHtml}
+    <button class="btn-ghost" id="mSkip">不取,前往星象集市</button>
   `);
   [...document.querySelectorAll(".relic-pick")].forEach(btn => {
     btn.addEventListener("click", () => {
       const o = offer[+btn.dataset.i];
       if (o.type === "relic") {
-        S.relics.push({ key: o.key, rev: o.rev });
-        o.rev ? sfx.rev() : sfx.relic();
+        grantRelic(o.key, o.rev);
         const def = RELIC_MAP[o.key];
-        closeModal(); S.layer++; startLayer();
         say(null, `收下「${def.name}${o.rev ? "·逆" : ""}」——${o.rev ? def.rdesc : def.desc}`);
+        showShop();
+      } else if (o.type === "enh") {
+        showEnhancePick(o.ekey, showShop);
       } else {
-        showEnhancePick(o.ekey);
+        gainDust(o.n);
+        showShop();
       }
     });
   });
-  $("mSkip").onclick = () => { closeModal(); S.layer++; startLayer(); };
+  $("mSkip").onclick = showShop;
 }
 
-/* 牌强化:从牌库抽 5 张选 1 铭刻 */
-function showEnhancePick(ekey) {
+/* 牌强化:从牌库抽 5 张选 1 铭刻(next = 后续去向) */
+function showEnhancePick(ekey, next) {
+  next = next || nextLayer;
   const e = ENHANCEMENTS[ekey];
   const candidates = shuffle(S.runDeck.filter(c => !c.enh)).slice(0, 5);
   const cardsHtml = candidates.map((c, i) => {
@@ -1104,21 +1329,274 @@ function showEnhancePick(ekey) {
     </button>`;
   }).join("");
   openModal(`
-    <h2>铭刻 · ${e.name}</h2>
+    <h2>铭刻 · ${e.name} ${rarBadge(e.rar)}</h2>
     <div class="sub" style="color:${e.color}">${e.desc}(本次远征内永久生效)</div>
     <div class="mini-grid">${cardsHtml}</div>
-    <button class="btn-ghost" id="mCancel">放弃铭刻,直接深入</button>
+    <button class="btn-ghost" id="mCancel">放弃铭刻</button>
   `);
   [...document.querySelectorAll(".mini-card")].forEach(btn => {
     btn.addEventListener("click", () => {
       const c = candidates[+btn.dataset.i];
       c.enh = ekey;
       sfx.relic();
-      closeModal(); S.layer++; startLayer();
       say(null, `铭刻成功——${SUITS[suitOptionsOf(c)[0]].name} ${c.rank} 已获得「${e.name}」。`);
+      next();
     });
   });
-  $("mCancel").onclick = () => { closeModal(); S.layer++; startLayer(); };
+  $("mCancel").onclick = next;
+}
+
+/* ====== 星象集市 ====== */
+let shopState = null;
+function genRelicOffer(exclude) {
+  const owned = new Set([...(exclude || []), ...S.relics.map(r => r.key)]);
+  let rar = rollRarity(RARITY ? { c: RARITY.c.w, r: RARITY.r.w, l: RARITY.l.w } : null);
+  let pool = RELICS.filter(r => !owned.has(r.key) && r.rar === rar);
+  if (!pool.length) pool = RELICS.filter(r => !owned.has(r.key));
+  if (!pool.length) return null;
+  const def = pool[Math.floor(Math.random() * pool.length)];
+  return {
+    type: "relic", key: def.key, rar: def.rar,
+    rev: S.version >= 4 && Math.random() < REV_CHANCE,
+    price: RELIC_PRICE[def.rar], sold: false,
+  };
+}
+function genEnhOffer() {
+  const keys = Object.keys(ENHANCEMENTS);
+  const rar = rollRarity({ c: 50, r: 38, l: 12 });
+  let pool = keys.filter(k => ENHANCEMENTS[k].rar === rar);
+  if (!pool.length) pool = keys;
+  const ekey = pool[Math.floor(Math.random() * pool.length)];
+  return { type: "enh", ekey, rar: ENHANCEMENTS[ekey].rar, price: ENH_PRICE[ENHANCEMENTS[ekey].rar], sold: false };
+}
+function rollShop() {
+  const r1 = genRelicOffer([]);
+  const r2 = genRelicOffer(r1 ? [r1.key] : []);
+  shopState = {
+    relics: [r1, r2].filter(Boolean),
+    enhs: S.version >= 3 ? [genEnhOffer()] : [],
+    rerollCost: 8,
+    upgradeUsed: false, purgeUsed: false,
+  };
+}
+
+function shopPrices() {
+  const dth = relicOf("death");
+  return {
+    upgrade: S.commission && S.commission.key === "giltPact" ? 6 : 12,
+    purge: dth && dth.rev ? 36 : 18,
+    gacha: S.weather && S.weather.key === "halo" ? 20 : 30,
+  };
+}
+
+function showShop() {
+  if (!shopState) rollShop();
+  const P = shopPrices();
+  const itemHtml = (o, i, kind) => {
+    if (o.type === "relic") {
+      const def = RELIC_MAP[o.key];
+      return `<button class="shop-item rl-${def.rar}${o.rev ? " rev-item" : ""}${o.sold ? " sold" : ""}${S.dust < o.price ? " cant" : ""}" data-k="${kind}" data-i="${i}">
+        <span class="si-icon"><svg viewBox="0 0 24 24"><use href="${def.icon}"/></svg></span>
+        <span class="si-body"><span class="si-name">${def.name}${o.rev ? "·逆" : ""}</span>${rarBadge(def.rar)}<div class="si-desc">${o.rev ? def.rdesc : def.desc}</div></span>
+        <span class="si-price">${o.sold ? "已售" : o.price + " ✦"}</span>
+      </button>`;
+    }
+    const e = ENHANCEMENTS[o.ekey];
+    return `<button class="shop-item rl-${e.rar}${o.sold ? " sold" : ""}${S.dust < o.price ? " cant" : ""}" data-k="${kind}" data-i="${i}">
+      <span class="si-icon" style="color:${e.color};border-color:${e.color}">◆</span>
+      <span class="si-body"><span class="si-name" style="color:${e.color}">铭刻卷 · ${e.name}</span>${rarBadge(e.rar)}<div class="si-desc">${e.desc} —— 购入后挑 1 张牌铭刻</div></span>
+      <span class="si-price">${o.sold ? "已售" : o.price + " ✦"}</span>
+    </button>`;
+  };
+  const pityLeft = 3 - (S.gachaPity % 3);
+  openModal(`
+    <div class="shop-head"><h2 style="margin:0">星象集市</h2><span class="shop-dust">✦ ${S.dust}</span></div>
+    <div class="sub" style="margin-bottom:2px">${layerLabel(S.layer)}与下一层之间 · 行商「时雨」憩于此</div>
+    <div class="shop-sec">异 象</div>
+    ${shopState.relics.length ? shopState.relics.map((o, i) => itemHtml(o, i, "relic")).join("") : `<p class="dim">异象已被你收集殆尽。</p>`}
+    ${shopState.enhs.length ? `<div class="shop-sec">铭 刻</div>` + shopState.enhs.map((o, i) => itemHtml(o, i, "enh")).join("") : ""}
+    <div class="shop-sec">牌 库 雕 琢</div>
+    <button class="shop-item${shopState.upgradeUsed ? " sold" : ""}${S.dust < P.upgrade ? " cant" : ""}" id="shopUpgrade">
+      <span class="si-icon">↟</span>
+      <span class="si-body"><span class="si-name">升阶</span><div class="si-desc">选 1 张牌,星阶 +1(上限 10)</div></span>
+      <span class="si-price">${shopState.upgradeUsed ? "已用" : P.upgrade + " ✦"}</span>
+    </button>
+    <button class="shop-item${shopState.purgeUsed ? " sold" : ""}${S.dust < P.purge ? " cant" : ""}" id="shopPurge">
+      <span class="si-icon">✂</span>
+      <span class="si-body"><span class="si-name">析灭</span><div class="si-desc">删除 1 张牌——牌库越纯,星轨越准</div></span>
+      <span class="si-price">${shopState.purgeUsed ? "已用" : P.purge + " ✦"}</span>
+    </button>
+    <div class="shop-sec">命 运 签</div>
+    <button class="shop-item gacha-item${S.dust < P.gacha ? " cant" : ""}" id="shopGacha">
+      <span class="si-icon">✦</span>
+      <span class="si-body"><span class="si-name" style="color:#d29bff">抽一签</span><div class="si-desc">异象 / 铭刻卷 / 星屑,听凭命运 · <span class="rar-l">天启</span>仅在此处现身</div><div class="gacha-pity">${pityLeft === 3 ? "保底已就绪:本签必出秘象以上" : `再抽 ${pityLeft} 签必出秘象以上`}</div></span>
+      <span class="si-price">${P.gacha} ✦</span>
+    </button>
+    <div class="shop-foot">
+      <button class="btn-ghost" id="shopReroll" ${S.dust < shopState.rerollCost ? "disabled style='opacity:0.4'" : ""}>重置货品 ${shopState.rerollCost} ✦</button>
+      <button class="btn-main" id="shopNext">深入下一层 →</button>
+    </div>
+  `);
+  [...document.querySelectorAll(".shop-item[data-k]")].forEach(btn => {
+    btn.addEventListener("click", () => {
+      const kind = btn.dataset.k, i = +btn.dataset.i;
+      const o = kind === "relic" ? shopState.relics[i] : shopState.enhs[i];
+      if (o.sold || !spendDust(o.price)) { showShop(); return; }
+      o.sold = true;
+      if (o.type === "relic") {
+        grantRelic(o.key, o.rev);
+        const def = RELIC_MAP[o.key];
+        say(null, `「${def.name}${o.rev ? "·逆" : ""}」已入星盘。时雨:这件,识货。`);
+        showShop();
+      } else {
+        showEnhancePick(o.ekey, showShop);
+      }
+    });
+  });
+  $("shopUpgrade").onclick = () => {
+    if (shopState.upgradeUsed) return;
+    if (S.dust < P.upgrade) { spendDust(P.upgrade); showShop(); return; }
+    showCardService("upgrade", P.upgrade);
+  };
+  $("shopPurge").onclick = () => {
+    if (shopState.purgeUsed) return;
+    if (S.dust < P.purge) { spendDust(P.purge); showShop(); return; }
+    showCardService("purge", P.purge);
+  };
+  $("shopGacha").onclick = () => {
+    if (!spendDust(P.gacha)) { showShop(); return; }
+    showGacha();
+  };
+  $("shopReroll").onclick = () => {
+    if (!spendDust(shopState.rerollCost)) { showShop(); return; }
+    /* 只刷新货品,服务使用状态与价格阶梯保留 */
+    const keep = { rerollCost: shopState.rerollCost + 5, upgradeUsed: shopState.upgradeUsed, purgeUsed: shopState.purgeUsed };
+    rollShop();
+    Object.assign(shopState, keep);
+    showShop();
+  };
+  $("shopNext").onclick = () => { shopState = null; nextLayer(); };
+}
+
+/* 牌库雕琢:升阶 / 析灭 */
+function showCardService(mode, price) {
+  const isUp = mode === "upgrade";
+  const pool = shuffle(S.runDeck.filter(c => (isUp ? c.rank < 10 : true))).slice(0, 8);
+  const cardsHtml = pool.map((c, i) => {
+    const isDual = !!c.suits;
+    const s1 = SUITS[isDual ? c.suits[0] : c.suit];
+    return `<button class="mini-card ${s1.cls}" data-i="${i}">
+      <span class="mc-rank">${c.rank}</span>
+      <svg viewBox="0 0 48 48" fill="none"><use href="${s1.glyph}"/></svg>
+      ${c.enh ? `<span style="color:${ENHANCEMENTS[c.enh].color};font-size:10px">◆</span>` : ""}
+    </button>`;
+  }).join("");
+  openModal(`
+    <h2>${isUp ? "升阶" : "析灭"}</h2>
+    <div class="sub">${isUp ? "选 1 张牌,星阶 +1" : "选 1 张牌,从牌库永久删除"}(${price} ✦)</div>
+    <div class="mini-grid">${cardsHtml}</div>
+    <button class="btn-ghost" id="mCancel">算了,回集市</button>
+  `);
+  [...document.querySelectorAll(".mini-card")].forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (!spendDust(price)) { showShop(); return; }
+      const c = pool[+btn.dataset.i];
+      const sName = SUITS[suitOptionsOf(c)[0]].name;
+      if (isUp) {
+        c.rank += 1;
+        shopState.upgradeUsed = true;
+        sfx.relic();
+        say(null, `${sName} ${c.rank - 1} 升阶为 ${c.rank}——星辉更盛了。`);
+      } else {
+        S.runDeck.splice(S.runDeck.indexOf(c), 1);
+        S.purges++;
+        shopState.purgeUsed = true;
+        sfx.swap();
+        const dth = relicOf("death");
+        say(null, dth ? `${sName} ${c.rank} 归于星尘。「死神」记下了这次蜕变。` : `${sName} ${c.rank} 归于星尘——牌库更纯粹了。`);
+      }
+      showShop();
+    });
+  });
+  $("mCancel").onclick = showShop;
+}
+
+/* 命运签:翻牌揭示 + 三签保底秘象 */
+function showGacha() {
+  S.gachaPity++;
+  const pity = S.gachaPity % 3 === 0;
+  let rar = rollRarity({ c: 55, r: 33, l: 12 });
+  if (pity && rar === "c") rar = "r";
+  /* 出货类型 */
+  let kind = Math.random();
+  const canEnh = S.version >= 3;
+  let result;
+  if (kind < 0.2) {
+    result = { type: "dust", n: 40 + (rar === "l" ? 30 : rar === "r" ? 15 : 0) };
+  } else if (canEnh && kind < 0.45) {
+    const keys = Object.keys(ENHANCEMENTS).filter(k => ENHANCEMENTS[k].rar === rar);
+    const ekey = keys.length ? keys[Math.floor(Math.random() * keys.length)] : "starset";
+    result = { type: "enh", ekey, rar: ENHANCEMENTS[ekey].rar };
+  } else {
+    let pool = unownedRelics(rar);
+    if (!pool.length) pool = unownedRelics();
+    if (!pool.length) result = { type: "dust", n: 60 };
+    else {
+      const def = pool[Math.floor(Math.random() * pool.length)];
+      result = { type: "relic", key: def.key, rar: def.rar, rev: S.version >= 4 && Math.random() < REV_CHANCE };
+    }
+  }
+  const finalRar = result.rar || (result.n >= 60 ? "r" : "c");
+  openModal(`
+    <h2>命运签</h2>
+    <div class="sub">行商时雨摇响签筒——</div>
+    <div class="gacha-stage">
+      <div class="gacha-card" id="gachaCard">
+        <div class="gacha-face gacha-back"><svg viewBox="0 0 48 48"><use href="#glyph-octa"/></svg></div>
+        <div class="gacha-face gacha-front rar-bg-${finalRar}" id="gachaFront"></div>
+      </div>
+    </div>
+    <div id="gachaResultLine" class="dim" style="min-height:20px"></div>
+    <button class="btn-main" id="gachaTake" style="visibility:hidden">收 下</button>
+  `);
+  sfx.gachaRoll();
+  const front = $("gachaFront");
+  if (result.type === "relic") {
+    const def = RELIC_MAP[result.key];
+    front.innerHTML = `<div class="gf-icon" style="color:${RARITY[def.rar].color}"><svg viewBox="0 0 24 24" style="${result.rev ? "transform:rotate(180deg)" : ""}"><use href="${def.icon}"/></svg></div>
+      <div class="gf-name" style="color:${RARITY[def.rar].color}">${def.name}${result.rev ? "·逆" : ""}</div>
+      <div class="gf-desc">${result.rev ? def.rdesc : def.desc}</div>`;
+  } else if (result.type === "enh") {
+    const e = ENHANCEMENTS[result.ekey];
+    front.innerHTML = `<div class="gf-icon" style="color:${e.color}">◆</div>
+      <div class="gf-name" style="color:${e.color}">铭刻卷 · ${e.name}</div>
+      <div class="gf-desc">${e.desc}</div>`;
+  } else {
+    front.innerHTML = `<div class="gf-icon" style="color:var(--gold-bright)">✦</div>
+      <div class="gf-name" style="color:var(--gold-bright)">星屑雨</div>
+      <div class="gf-desc">+${result.n} 星屑,命运的找零</div>`;
+  }
+  setTimeout(() => {
+    $("gachaCard").classList.add("flip");
+    sfx.gachaHit(finalRar);
+    if (finalRar !== "c") { S.gachaPity = 0; }
+    const line = $("gachaResultLine");
+    line.innerHTML = finalRar === "l"
+      ? `<span class="rar-l">天启降临——连时雨都屏住了呼吸。</span>`
+      : finalRar === "r" ? `<span class="rar-r">秘象浮现,这签不亏。</span>` : "凡象一枚。命运在攒大的。";
+    $("gachaTake").style.visibility = "visible";
+  }, 950);
+  $("gachaTake").onclick = () => {
+    if (result.type === "relic") {
+      grantRelic(result.key, result.rev);
+      showShop();
+    } else if (result.type === "enh") {
+      showEnhancePick(result.ekey, showShop);
+    } else {
+      gainDust(result.n);
+      showShop();
+    }
+  };
 }
 
 function showFail() {
@@ -1128,7 +1606,7 @@ function showFail() {
       <div class="sub">${layerLabel(S.layer)} · 稳定度未达成</div>
       <p>共鸣 <b class="kw">${S.layerScore}</b> / ${S.threshold}</p>
       <p class="dim">一道熟悉的回响穿过裂隙而来——</p>
-      <button class="btn-main" id="mRevive">回响复活(本次远征限 1 次)</button>
+      <button class="btn-main" id="mRevive">回响复活(剩 ${S.revives} 次)</button>
       <p class="dim" style="margin-top:8px">内部演示:正式版此处为「男主救场 / 广告 / 分享」复活位</p>
       <button class="btn-ghost" id="mSettle">结束远征,结算</button>
     `);
@@ -1141,17 +1619,22 @@ function showFail() {
 
 function showSettle() {
   const cleared = S.layer - 1;
+  const isNewBest = recordBest();
+  const cm = S.commission;
   openModal(`
     <h2>远征结算</h2>
-    <div class="sub">星轨裁决 · 内部演示 v0.4 · 版本${VER_NAMES[S.version]}</div>
+    <div class="sub">${cm ? `委托「${cm.title}」· ` : ""}天象「${S.weather ? S.weather.name : "—"}」· 版本${VER_NAMES[S.version]}</div>
+    ${isNewBest ? `<p style="color:var(--gold-bright);font-family:var(--serif);letter-spacing:0.2em;margin:2px 0 0">✦ 新纪录 ✦</p>` : ""}
     <div class="stat-grid">
       <div class="stat"><div class="v" data-cv="${cleared}">0</div><div class="k">稳定星层</div></div>
       <div class="stat"><div class="v" data-cv="${S.runScore}">0</div><div class="k">总共鸣</div></div>
       <div class="stat"><div class="v" data-cv="${S.bestPlay ? S.bestPlay.score : 0}">0</div><div class="k">最高单手${S.bestPlay ? " · " + S.bestPlay.name : ""}</div></div>
       <div class="stat"><div class="v" data-cv="${S.relics.length}">0</div><div class="k">收集异象</div></div>
+      <div class="stat"><div class="v" data-cv="${S.dustEarned}">0</div><div class="k">星屑总入账</div></div>
+      <div class="stat"><div class="v" data-cv="${S.purges}">0</div><div class="k">析灭牌数</div></div>
     </div>
     <p class="dim">数值未调优 · 用于内部手感与接受度测试(docs/05)</p>
-    <button class="btn-main" id="mRestart">再 次 远 征</button>
+    <button class="btn-main" id="mRestart">再 次 远 征(换一份委托)</button>
     <button class="btn-ghost" id="mTitle">返回版本选择</button>
   `);
   document.querySelectorAll(".stat .v[data-cv]").forEach((el, i) => {
@@ -1164,7 +1647,7 @@ function showSettle() {
     };
     requestAnimationFrame(tick);
   });
-  $("mRestart").onclick = () => { closeModal(); newRun(); };
+  $("mRestart").onclick = () => { closeModal(); showCommissionPick(S.version); };
   $("mTitle").onclick = () => { closeModal(); showTitle(); };
 }
 
@@ -1172,9 +1655,61 @@ function newRun() {
   S.layer = 1; S.revives = RULES.revives;
   S.runScore = 0; S.bestPlay = null; S.lit = new Set();
   S.relics = []; S.moonCharge = false; S.moonStack = 0;
+  /* v0.5 */
+  S.dust = 30; S.dustEarned = 0;
+  S.gachaPity = 0; S.purges = 0; S.lastComboKey = null;
+  shopState = null;
+  S.weather = WEATHERS[Math.floor(Math.random() * WEATHERS.length)];
+  if (S.commission && S.commission.key === "bladeMercy") S.revives += 1;
   S.runDeck = buildRunDeck();
   S.started = true;
   startLayer();
+  /* 委托开场:驻场双主登场对白 */
+  if (S.commission) {
+    const [a, b] = S.commission.intro;
+    setTimeout(() => say(a[0], a[1], 0), 1100);
+    setTimeout(() => say(b[0], b[1]), 4300);
+  }
+}
+
+/* ====== 剧情委托选择(v0.5):每次远征随机两份委托二选一 ======
+   正式版:驻场组合由当前剧情章节决定 —— 玩到谁的篇章,谁来陪打 */
+function showCommissionPick(version) {
+  const picks = shuffle(COMMISSIONS.slice()).slice(0, 2);
+  const html = picks.map((cm, i) => {
+    const [a, b] = cm.pair;
+    return `<button class="comm-pick" data-i="${i}">
+      <div class="comm-top">
+        <div class="comm-avs">
+          <span class="ca" style="color:${SUITS[a].color}"><svg viewBox="0 0 48 48" fill="none"><use href="${SUITS[a].glyph}"/></svg></span>
+          <span class="ca" style="color:${SUITS[b].color}"><svg viewBox="0 0 48 48" fill="none"><use href="${SUITS[b].glyph}"/></svg></span>
+        </div>
+        <span>
+          <div class="comm-title">${cm.title}</div>
+          <div class="comm-scene">${cm.scene}</div>
+        </span>
+      </div>
+      <div class="comm-perk">驻场:<span style="color:${SUITS[a].color}">${LEADS[a].name}</span> × <span style="color:${SUITS[b].color}">${LEADS[b].name}</span><br>
+      祝福:<span class="kw">两人花色 底分 +1/张</span> · <span class="kw">${cm.perk}</span><br>
+      <span style="color:var(--ink-dim);font-size:11px">牌库额外混入两人花色各 2 张</span></div>
+    </button>`;
+  }).join("");
+  openModal(`
+    <h2>命运委托</h2>
+    <div class="sub">本夜裂隙告示 · 版本${VER_NAMES[version]} · 选择与谁同行</div>
+    ${html}
+    <p class="dim" style="margin-top:4px">正式版中,驻场组合由你正在推进的剧情章节决定——<br>玩到谁的篇章,谁来陪你裁决。</p>
+    <button class="btn-ghost" id="mBack">返回版本选择</button>
+  `);
+  [...document.querySelectorAll(".comm-pick")].forEach(btn => {
+    btn.addEventListener("click", () => {
+      S.commission = picks[+btn.dataset.i];
+      S.version = version;
+      closeModal();
+      newRun();
+    });
+  });
+  $("mBack").onclick = () => { closeModal(); showTitle(); };
 }
 
 /* ---------------- 模态 ---------------- */
@@ -1194,16 +1729,21 @@ function showCodexModal() {
   const relicRows = S.relics.length
     ? S.relics.map(r => {
         const def = RELIC_MAP[r.key];
-        return `<tr><td class="cx-name">${r.rev ? "☾" : "✧"} ${def.name}${r.rev ? "·逆" : ""}</td><td class="cx-desc" colspan="2">${r.rev ? def.rdesc : def.desc}</td></tr>`;
+        return `<tr><td class="cx-name" style="color:${RARITY[def.rar].color}">${r.rev ? "☾" : "✧"} ${def.name}${r.rev ? "·逆" : ""}</td><td class="cx-desc" colspan="2">${r.rev ? def.rdesc : def.desc}</td></tr>`;
       }).join("")
-    : `<tr><td class="cx-desc" colspan="3">尚未收集异象——稳定裂隙后三选一。</td></tr>`;
+    : `<tr><td class="cx-desc" colspan="3">尚未收集异象——过层回赠 / 星象集市 / 命运签均可获取。</td></tr>`;
+  const ctx = [];
+  if (S.commission) ctx.push(`委托「${S.commission.title}」:${LEADS[S.commission.pair[0]].name} × ${LEADS[S.commission.pair[1]].name} —— 两人花色 底分 +1/张;${S.commission.perk}。`);
+  if (S.weather) ctx.push(`天象「${S.weather.name}」:${S.weather.desc}。`);
   const extras = [];
   if (S.version >= 2) extras.push("双象牌:同时属于两个花色,判定自动取最优归属。");
-  if (S.version >= 3) extras.push("牌强化:◆ 标记的印记带永久铭刻(镶星/饰金/共鸣/回响)。");
+  if (S.version >= 3) extras.push("牌铭刻:◆ 标记的印记带永久铭刻(镶星/饰金/共鸣/回响/辉煌)。");
   if (S.version >= 4) extras.push("逆位异象(紫):更强,但伴随代价。");
+  extras.push(`稀有度:<span class="rar-c">凡象</span> / <span class="rar-r">秘象</span> / <span class="rar-l">天启</span>——天启只在集市与命运签出现。`);
   openModal(`
     <h2>裁决式图鉴</h2>
     <div class="sub">✦ = 本次远征已点亮 · ①-④ 为剧情解锁批次 · 版本${VER_NAMES[S.version]}</div>
+    ${ctx.length ? `<p class="dim" style="text-align:left;margin-bottom:8px">${ctx.join("<br>")}</p>` : ""}
     <table class="codex-table">${rows}</table>
     <p class="dim" style="margin-top:10px">—— 已持有异象 ——</p>
     <table class="codex-table">${relicRows}</table>
@@ -1246,32 +1786,51 @@ function showTutorial(page = 0) {
      <p class="dim">不确定怎么打?星轨会为你标出推荐(右上「导」可切换)。</p>
      <button class="btn-main" id="tNext">下一页</button>`,
     `<h2>命运站在你这边</h2>
-     <div class="sub">法则与异象</div>
+     <div class="sub">法则、异象与星屑</div>
      <p>左下<span class="kw">命运之轮</span>:每层一次,命运重转,必有一手好牌。</p>
-     <p>每稳定一层裂隙,可从裂隙的回赠中<span class="kw">三选一</span>——异象会持续改写你的星轨,越深入,越强大。</p>
+     <p>每稳定一层裂隙,可获<span class="kw">星屑 ✦</span>与免费回赠,并进入<span class="kw">星象集市</span>——购买异象、铭刻、升阶析灭,或抽一支<span class="kw">命运签</span>。</p>
+     <p class="dim">远征由两位男主驻场同行——玩到谁的篇章,谁来陪你裁决。</p>
      <button class="btn-main" id="tNext">开 始 远 征</button>`,
   ];
   openModal(pages[page]);
   $("tNext").onclick = () => {
     if (page < pages.length - 1) showTutorial(page + 1);
-    else { closeModal(); S.version = 1; newRun(); }
+    else { closeModal(); showCommissionPick(1); }
   };
+}
+
+function bestOf(v) {
+  try {
+    const b = JSON.parse(localStorage.getItem(`sv_best_${v}`) || "null");
+    return b && b.layer > 0 ? `<span class="best-tag">最深 ${b.layer} 层 · ${b.score}</span>` : "";
+  } catch (e) { return ""; }
+}
+function recordBest() {
+  try {
+    const cleared = S.layer - 1;
+    const old = JSON.parse(localStorage.getItem(`sv_best_${S.version}`) || "null");
+    if (!old || cleared > old.layer || (cleared === old.layer && S.runScore > old.score)) {
+      localStorage.setItem(`sv_best_${S.version}`, JSON.stringify({ layer: cleared, score: S.runScore }));
+      return cleared > 0;
+    }
+  } catch (e) {}
+  return false;
 }
 
 function showTitle() {
   openModal(`
     <svg class="title-octa" viewBox="0 0 48 48"><use href="#glyph-octa"/></svg>
     <h2>星轨裁决</h2>
-    <div class="sub">STARLIGHT VERDICT · 内部演示 v0.4</div>
+    <div class="sub">STARLIGHT VERDICT · 内部演示 v0.5</div>
     <p style="margin:14px 0 10px">巨大的裂隙悬在暮星城上空。<br>选择本次远征的玩法深度:</p>
-    <button class="btn-main" id="v1">Ⅰ · 剧情内简单版(首测推荐)</button>
-    <button class="btn-main btn-second" id="v2">Ⅱ · + 双象牌(4×4 双花色)</button>
-    <button class="btn-main btn-second" id="v3">Ⅲ · + 通关牌强化(铭刻)</button>
-    <button class="btn-main btn-second" id="v4">Ⅳ · 完整版 · 异象逆位(硬核)</button>
+    <button class="btn-main" id="v1">Ⅰ · 剧情内简单版(首测推荐)${bestOf(1)}</button>
+    <button class="btn-main btn-second" id="v2">Ⅱ · + 双象牌(4×4 双花色)${bestOf(2)}</button>
+    <button class="btn-main btn-second" id="v3">Ⅲ · + 牌铭刻与铭刻卷${bestOf(3)}</button>
+    <button class="btn-main btn-second" id="v4">Ⅳ · 完整版 · 异象逆位(硬核)${bestOf(4)}</button>
     <button class="btn-ghost" id="tStart">先看教学(以版本Ⅰ开始)</button>
     <p class="dim" style="margin-top:12px">版本逐级叠加 · 对应 docs/04 §14 路线<br>数值未调优 · 男主反馈为文案演示</p>
   `);
-  const start = (v) => { S.version = v; closeModal(); newRun(); };
+  const start = (v) => showCommissionPick(v);
   $("v1").onclick = () => start(1);
   $("v2").onclick = () => start(2);
   $("v3").onclick = () => start(3);

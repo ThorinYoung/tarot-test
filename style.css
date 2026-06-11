@@ -1131,3 +1131,189 @@ body::before {
   .card { width: 70px; height: 104px; margin: 0 -16px; }
   .card .rank { font-size: 22px; }
 }
+
+/* ==========================================================
+   v0.5 经济与构筑层:星屑 / 稀有度 / 星象集市 / 命运签 / 委托
+   ========================================================== */
+
+/* 星屑 HUD */
+.dust-hud {
+  font-family: var(--serif);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--gold-bright);
+  border: 1px solid rgba(216, 180, 106, 0.4);
+  border-radius: 20px;
+  padding: 3px 10px;
+  background: rgba(216, 180, 106, 0.07);
+  white-space: nowrap;
+}
+.dust-hud.bump { animation: dustBump 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes dustBump {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.22); box-shadow: 0 0 14px rgba(243, 216, 150, 0.5); }
+  100% { transform: scale(1); }
+}
+
+/* 异象槽可换行(收集量大) */
+.relic-row { flex-wrap: wrap; }
+
+/* 稀有度 */
+.rar-tag {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  border-radius: 3px;
+  padding: 1px 5px;
+  border: 1px solid currentColor;
+  vertical-align: 2px;
+  margin-left: 6px;
+  white-space: nowrap;
+}
+.rar-c { color: #9fb4d8; }
+.rar-r { color: #f0c75e; }
+.rar-l { color: #d29bff; text-shadow: 0 0 8px rgba(192, 141, 255, 0.7); }
+.relic-pick.rl-l { border-color: rgba(192, 141, 255, 0.5); box-shadow: 0 0 16px rgba(192, 141, 255, 0.14) inset; }
+.relic-pick.rl-r { border-color: rgba(240, 199, 94, 0.45); }
+
+/* ====== 星象集市 ====== */
+.shop-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 4px;
+}
+.shop-dust { font-family: var(--serif); font-size: 15px; color: var(--gold-bright); }
+.shop-sec {
+  font-size: 11px; letter-spacing: 0.3em; color: var(--ink-dim);
+  margin: 12px 0 6px; text-align: left;
+  display: flex; align-items: center; gap: 8px;
+}
+.shop-sec::after { content: ""; flex: 1; height: 1px; background: rgba(216, 180, 106, 0.18); }
+.shop-item {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; text-align: left;
+  background: rgba(13, 18, 38, 0.85);
+  border: 1px solid rgba(216, 180, 106, 0.22);
+  border-radius: 10px;
+  padding: 9px 10px;
+  margin-bottom: 8px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.2s ease;
+}
+.shop-item:active:not(.sold) { transform: scale(0.97); border-color: var(--gold-bright); }
+.shop-item.rl-l { border-color: rgba(192, 141, 255, 0.45); box-shadow: 0 0 14px rgba(192, 141, 255, 0.12) inset; }
+.shop-item.rl-r { border-color: rgba(240, 199, 94, 0.4); }
+.shop-item.sold { opacity: 0.32; pointer-events: none; }
+.shop-item.cant { opacity: 0.55; }
+.shop-item .si-icon {
+  width: 38px; height: 38px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(216, 180, 106, 0.4);
+  border-radius: 50%;
+  color: var(--gold-bright);
+  font-family: var(--serif); font-size: 15px;
+}
+.shop-item .si-icon svg { width: 22px; height: 22px; stroke: currentColor; fill: none; }
+.shop-item.rev-item .si-icon { border-color: #b07cff; color: #cfa6ff; }
+.shop-item.rev-item .si-icon svg { transform: rotate(180deg); }
+.shop-item .si-body { flex: 1; min-width: 0; }
+.shop-item .si-name { font-family: var(--serif); font-size: 14.5px; letter-spacing: 0.1em; color: var(--gold-bright); }
+.shop-item .si-desc { font-size: 11.5px; color: var(--ink-dim); line-height: 1.5; margin-top: 2px; }
+.shop-item .si-price {
+  flex: none; font-family: var(--serif); font-size: 14px;
+  color: var(--gold-bright); white-space: nowrap;
+  border: 1px solid rgba(216, 180, 106, 0.45);
+  border-radius: 16px; padding: 4px 10px;
+  background: rgba(216, 180, 106, 0.08);
+}
+.shop-item.cant .si-price { color: #d4574a; border-color: rgba(212, 87, 74, 0.5); }
+.shop-item.sold .si-price { color: var(--ink-dim); }
+.shop-foot { display: flex; gap: 10px; margin-top: 12px; }
+.shop-foot .btn-ghost { flex: 1; margin-top: 0; }
+.shop-foot .btn-main { flex: 1.4; margin-top: 0; }
+
+/* 命运签 */
+.gacha-item {
+  background: linear-gradient(135deg, rgba(38, 24, 64, 0.9), rgba(13, 18, 38, 0.9));
+  border-color: rgba(192, 141, 255, 0.4);
+}
+.gacha-item .si-icon { border-color: rgba(192, 141, 255, 0.7); color: #d29bff; animation: gachaPulse 2.2s ease-in-out infinite; }
+@keyframes gachaPulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(192, 141, 255, 0.25); }
+  50% { box-shadow: 0 0 16px rgba(192, 141, 255, 0.6); }
+}
+
+/* 命运签 揭示 */
+.gacha-stage { perspective: 700px; margin: 20px auto 14px; width: 120px; height: 168px; }
+.gacha-card {
+  width: 100%; height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.85s cubic-bezier(0.3, 1.2, 0.4, 1);
+}
+.gacha-card.flip { transform: rotateY(180deg); }
+.gacha-face {
+  position: absolute; inset: 0;
+  backface-visibility: hidden;
+  border-radius: 12px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  border: 1.5px solid rgba(216, 180, 106, 0.5);
+}
+.gacha-back {
+  background:
+    radial-gradient(circle at 50% 38%, rgba(192, 141, 255, 0.22), transparent 60%),
+    repeating-conic-gradient(from 22.5deg, rgba(216, 180, 106, 0.1) 0 22.5deg, rgba(13, 18, 38, 0) 22.5deg 45deg),
+    #0d1226;
+}
+.gacha-back svg { width: 44px; height: 44px; color: rgba(216, 180, 106, 0.8); animation: slowSpin 9s linear infinite; }
+.gacha-front { transform: rotateY(180deg); background: #0d1226; padding: 10px; text-align: center; }
+.gacha-front .gf-icon { width: 46px; height: 46px; display: flex; align-items: center; justify-content: center; font-size: 26px; font-family: var(--serif); }
+.gacha-front .gf-icon svg { width: 38px; height: 38px; stroke: currentColor; fill: none; }
+.gacha-front .gf-name { font-family: var(--serif); font-size: 15px; letter-spacing: 0.12em; }
+.gacha-front .gf-desc { font-size: 10.5px; color: var(--ink-dim); line-height: 1.5; }
+.gacha-front.rar-bg-c { border-color: rgba(159, 180, 216, 0.6); box-shadow: 0 0 18px rgba(159, 180, 216, 0.2); }
+.gacha-front.rar-bg-r { border-color: rgba(240, 199, 94, 0.75); box-shadow: 0 0 26px rgba(240, 199, 94, 0.35); }
+.gacha-front.rar-bg-l {
+  border-color: rgba(210, 155, 255, 0.9);
+  box-shadow: 0 0 36px rgba(192, 141, 255, 0.55);
+  animation: legGlow 1.6s ease-in-out infinite;
+}
+@keyframes legGlow {
+  0%, 100% { box-shadow: 0 0 22px rgba(192, 141, 255, 0.4); }
+  50% { box-shadow: 0 0 44px rgba(192, 141, 255, 0.75); }
+}
+.gacha-pity { font-size: 10.5px; color: var(--ink-dim); letter-spacing: 0.12em; }
+
+/* ====== 委托选择 ====== */
+.comm-pick {
+  display: block; width: 100%; text-align: left;
+  background: rgba(13, 18, 38, 0.85);
+  border: 1px solid rgba(216, 180, 106, 0.28);
+  border-radius: 12px;
+  padding: 12px 13px;
+  margin-bottom: 10px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.2s ease;
+}
+.comm-pick:active { transform: scale(0.97); border-color: var(--gold-bright); background: rgba(216, 180, 106, 0.1); }
+.comm-top { display: flex; align-items: center; gap: 10px; }
+.comm-avs { display: flex; flex: none; }
+.comm-avs .ca {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 1.5px solid currentColor;
+  background: #0a0e20;
+  display: flex; align-items: center; justify-content: center;
+}
+.comm-avs .ca + .ca { margin-left: -9px; }
+.comm-avs .ca svg { width: 20px; height: 20px; stroke: currentColor; fill: none; }
+.comm-title { font-family: var(--serif); font-size: 16.5px; letter-spacing: 0.18em; color: var(--gold-bright); }
+.comm-scene { font-size: 11px; color: var(--ink-dim); letter-spacing: 0.08em; margin-top: 2px; }
+.comm-perk { font-size: 12px; color: var(--ink); margin-top: 8px; line-height: 1.6; }
+.comm-perk .kw { font-size: 12px; }
+
+/* 天象行 */
+.li-weather { font-size: 11.5px; color: #9fb4d8; letter-spacing: 0.15em; margin-top: 5px; }
+
+/* 标题页最佳纪录 */
+.best-tag { font-size: 10.5px; color: var(--ink-dim); letter-spacing: 0.08em; margin-left: 8px; }
+.shop-item.cant { pointer-events: none; }

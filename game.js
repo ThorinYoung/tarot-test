@@ -119,22 +119,28 @@ const ENHANCEMENTS = {
 const COMMISSIONS = [
   { key: "blazeBlade", pair: ["wand", "sword"], title: "锋焰协奏", scene: "危楼天台 · 裂隙在两人头顶交错",
     perk: "权杖/宝剑的同辉系 倍率 +1",
-    intro: [["wand", "这道裂隙归我们俩管——你负责选,我负责赢。"], ["sword", "情报显示今晚星轨偏锋……正好,我想看你出招。"]] },
+    intro: [["wand", "这道裂隙归我们俩管——你负责选,我负责赢。"], ["sword", "情报显示今晚星轨偏锋……正好,我想看你出招。"]],
+    outro: [["wand", "烧完了。天亮之前,我请你看暮星城最干净的夜空。"], ["sword", "第十八种打法——原来是你本身。记下了。"]] },
   { key: "ledgerNight", pair: ["coin", "cup"], title: "深夜账房", scene: "事务所灯下 · 账册间浮起星屑",
     perk: "每层星屑报酬 +6",
-    intro: [["coin", "委托费我已记在账上——这一次,我们亲自押送。"], ["cup", "夜里冷,我泡了茶。慢慢打,我们不赶时间。"]] },
+    intro: [["coin", "委托费我已记在账上——这一次,我们亲自押送。"], ["cup", "夜里冷,我泡了茶。慢慢打,我们不赶时间。"]],
+    outro: [["coin", "账清了。这一夜的星屑,全部归你。"], ["cup", "茶凉了三回,你终于回头了。……欢迎回来。"]] },
   { key: "flameTide", pair: ["wand", "cup"], title: "焰与潮", scene: "海雾码头 · 裂隙倒映在潮面",
     perk: "每层重引 +1",
-    intro: [["wand", "海风太吵了——还好,你的星轨够亮。"], ["cup", "别怕走错,潮水会把你送回正确的位置。"]] },
+    intro: [["wand", "海风太吵了——还好,你的星轨够亮。"], ["cup", "别怕走错,潮水会把你送回正确的位置。"]],
+    outro: [["wand", "潮退了,火还在。下次远征,还选我。"], ["cup", "星轨归位的声音,像潮汐。陪你听完了。"]] },
   { key: "coldGambit", pair: ["coin", "sword"], title: "冷局推演", scene: "星图议事厅 · 沙盘上裂隙缓缓张开",
     perk: "对印/双对印 倍率 +1",
-    intro: [["sword", "我推演了十七种打法。但我更想看你的第十八种。"], ["coin", "风险已对冲。剩下的,交给你的直觉。"]] },
+    intro: [["sword", "我推演了十七种打法。但我更想看你的第十八种。"], ["coin", "风险已对冲。剩下的,交给你的直觉。"]],
+    outro: [["sword", "推演终局:你赢。误差,零。"], ["coin", "对冲全部平仓。这一局,我们净赚一座城的安眠。"]] },
   { key: "giltPact", pair: ["wand", "coin"], title: "燃金之约", scene: "拍卖会后巷 · 火光与金粉齐飞",
     perk: "集市升阶 半价",
-    intro: [["wand", "他出钱,我出火——你只管赢得漂亮。"], ["coin", "预算充足。今晚,星阶随你升。"]] },
+    intro: [["wand", "他出钱,我出火——你只管赢得漂亮。"], ["coin", "预算充足。今晚,星阶随你升。"]],
+    outro: [["wand", "金粉落定,火也尽兴。约,还作数。"], ["coin", "投资结清——但下一份契约,我已经拟好了。"]] },
   { key: "bladeMercy", pair: ["sword", "cup"], title: "刃上温柔", scene: "医院顶层 · 裂隙悬在静谧夜空",
     perk: "回响复活 +1 次",
-    intro: [["sword", "我守外侧。有我在,你不会输第二次。"], ["cup", "就算溃散也没关系——我接得住你。"]] },
+    intro: [["sword", "我守外侧。有我在,你不会输第二次。"], ["cup", "就算溃散也没关系——我接得住你。"]],
+    outro: [["sword", "外侧无敌情。你的身后,从始至终是安全的。"], ["cup", "裂隙睡着了。你也该休息了,做个有星星的梦。"]] },
 ];
 
 /* 回响星层(v0.7):每 3 层一次的 boss 规则层,随机一条特殊规则(挑战+补偿) */
@@ -176,7 +182,12 @@ const album = (() => {
   return {
     recRelic(key) { const a = load(); a.relics[key] = (a.relics[key] || 0) + 1; save(a); },
     recCourt(rank, suit) { const a = load(); const k = `${rank}-${suit}`; a.courts[k] = (a.courts[k] || 0) + 1; save(a); },
-    recRun(cleared) { const a = load(); a.runs += 1; a.maxLayer = Math.max(a.maxLayer, cleared); save(a); },
+    recRun(cleared) {
+      const a = load();
+      a.runs += 1; a.maxLayer = Math.max(a.maxLayer, cleared);
+      if (cleared >= 10) a.fullClears = (a.fullClears || 0) + 1;
+      save(a);
+    },
     data: load,
   };
 })();
@@ -235,7 +246,9 @@ function thresholdOf(layer) {
   return Math.round((100 * Math.pow(1.35, layer - 1)) / 5) * 5;
 }
 const LAYER_NAMES = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
+const FINAL_LAYER = 10;
 function layerLabel(n) {
+  if (n === FINAL_LAYER) return "裂隙 · 终焉星层";
   return n <= 10 ? `裂隙 · 第${LAYER_NAMES[n - 1]}星层` : `裂隙 · 第${n}星层`;
 }
 const VER_NAMES = { 1: "Ⅰ", 2: "Ⅱ", 3: "Ⅲ", 4: "Ⅳ" };
@@ -1001,7 +1014,8 @@ async function onPlay() {
   if (S.layerScore >= S.threshold) {
     sfx.clear();
     await sealCelebration();
-    showLayerClear();
+    if (S.layer >= FINAL_LAYER) { S.layer++; showVictory(); }
+    else showLayerClear();
   } else if (S.plays <= 0) {
     sfx.fail();
     await breakdownShow();
@@ -1361,7 +1375,8 @@ async function onAssist() {
         say(suit, `「看好了。」${LEADS[suit].name}亲手缝上了裂隙的最后一寸。`);
         sfx.clear();
         await sealCelebration();
-        showLayerClear();
+        if (S.layer >= FINAL_LAYER) { S.layer++; showVictory(); }
+        else showLayerClear();
         renderCounters();
         return;
       }
@@ -1406,8 +1421,9 @@ async function onArcana() {
 
 /* ---------------- 层级流转 ---------------- */
 function startLayer() {
-  /* 回响星层:每 3 层一次,随机规则 */
-  S.bossRule = (S.layer % 3 === 0) ? BOSS_RULES[Math.floor(Math.random() * BOSS_RULES.length)] : null;
+  /* 回响星层:每 3 层一次;终焉星层(第 10 层)必现 */
+  S.bossRule = (S.layer % 3 === 0 || S.layer === FINAL_LAYER)
+    ? BOSS_RULES[Math.floor(Math.random() * BOSS_RULES.length)] : null;
   S.threshold = thresholdOf(S.layer);
   if (S.weather && S.weather.key === "tide") S.threshold = Math.round((S.threshold * 1.2) / 5) * 5;
   if (S.bossRule && S.bossRule.key === "maw") S.threshold = Math.round((S.threshold * 1.5) / 5) * 5;
@@ -1860,24 +1876,42 @@ function showFail() {
   }
 }
 
+/* 终焉星层告破:完结演出(委托双主完结对白 → 结算) */
+function showVictory() {
+  const cm = S.commission;
+  const outroHtml = cm ? cm.outro.map(([su, line]) =>
+    `<p style="color:${SUITS[su].color};font-family:var(--serif);text-align:left;line-height:1.8;margin-bottom:6px">${LEADS[su].name}:「${line}」</p>`).join("") : "";
+  openModal(`
+    <svg class="title-octa" viewBox="0 0 48 48"><use href="#glyph-octa"/></svg>
+    <h2>裂隙 · 完全闭合</h2>
+    <div class="sub">终焉星层告破 · 远征完遂</div>
+    <p style="margin:10px 0 12px">最后一道金线收紧,紫色的轰鸣彻底沉寂。<br>暮星城的夜空,第一次露出完整的星河。</p>
+    ${outroHtml}
+    <button class="btn-main" id="mVictory">看 远 征 结 算</button>
+  `);
+  flash();
+  $("mVictory").onclick = () => { closeModal(); showSettle(); };
+}
+
 function showSettle() {
   const cleared = S.layer - 1;
+  const isFull = cleared >= FINAL_LAYER;
   const isNewBest = recordBest();
   album.recRun(cleared);
   const cm = S.commission;
-  /* 战绩卡:驻场男主结语(按战绩分档) */
+  /* 战绩卡:驻场男主结语(按战绩分档;完遂用 high 档) */
   const quoteSuit = cm ? cm.pair[Math.floor(Math.random() * 2)] : "cup";
-  const tier = cleared >= 6 ? "high" : cleared >= 3 ? "mid" : "low";
+  const tier = isFull || cleared >= 6 ? "high" : cleared >= 3 ? "mid" : "low";
   const quote = SETTLE_LINES[quoteSuit][tier];
   const cardHtml = `
     <div class="result-card" id="resultCard">
-      <div class="rc-top">✦ 星轨裁决 · 远征战绩 ✦</div>
+      <div class="rc-top">${isFull ? "✦ 远征完遂 · 裂隙完全闭合 ✦" : "✦ 星轨裁决 · 远征战绩 ✦"}</div>
       ${cm ? `<div class="rc-comm">
         <span class="ca" style="color:${SUITS[cm.pair[0]].color}"><svg viewBox="0 0 48 48" fill="none"><use href="${SUITS[cm.pair[0]].glyph}"/></svg></span>
         <span class="rc-comm-t">「${cm.title}」</span>
         <span class="ca" style="color:${SUITS[cm.pair[1]].color}"><svg viewBox="0 0 48 48" fill="none"><use href="${SUITS[cm.pair[1]].glyph}"/></svg></span>
       </div>` : ""}
-      <div class="rc-big">${cleared > 0 ? `深入 第 ${cleared} 星层` : "止步 第一星层"}</div>
+      <div class="rc-big">${isFull ? "十层星轨 · 全数点亮" : cleared > 0 ? `深入 第 ${cleared} 星层` : "止步 第一星层"}</div>
       <div class="rc-stats">总共鸣 ${S.runScore} · 最高单手 ${S.bestPlay ? S.bestPlay.score : 0} · 异象 ${S.relics.length}</div>
       <div class="rc-quote" style="color:${SUITS[quoteSuit].color}">${LEADS[quoteSuit].name}:「${quote}」</div>
     </div>`;
@@ -1956,7 +1990,7 @@ function downloadResultCard(cleared, quoteSuit, quote) {
     cx.fillStyle = SUITS[b].color; cx.fillText(LEADS[b].name, W / 2 + 86, 280);
   }
   cx.fillStyle = "#e9e4d6"; cx.font = `42px ${serif}`;
-  cx.fillText(cleared > 0 ? `深入 第 ${cleared} 星层` : "止步 第一星层", W / 2, 360);
+  cx.fillText(cleared >= FINAL_LAYER ? "裂隙 · 完全闭合" : cleared > 0 ? `深入 第 ${cleared} 星层` : "止步 第一星层", W / 2, 360);
   cx.fillStyle = "#b9c0d4"; cx.font = `17px ${serif}`;
   cx.fillText(`总共鸣 ${S.runScore}    最高单手 ${S.bestPlay ? S.bestPlay.score : 0}    异象 ${S.relics.length}`, W / 2, 410);
   /* 结语 */
@@ -2166,7 +2200,7 @@ function showAlbum() {
   }).join("");
   openModal(`
     <h2>星轨手账</h2>
-    <div class="sub">远征 ${a.runs} 次 · 最深 ${a.maxLayer} 层 · 异象 ${relicGot}/16 · 宫廷 ${courtGot}/16</div>
+    <div class="sub">远征 ${a.runs} 次 · 最深 ${a.maxLayer} 层${a.fullClears ? ` · 完遂 ${a.fullClears} 次` : ""} · 异象 ${relicGot}/16 · 宫廷 ${courtGot}/16</div>
     <div class="shop-sec">异 象 收 集</div>
     <div class="alb-grid">${relicCells}</div>
     <div class="shop-sec">宫 廷 牌 · 驰 援 录</div>

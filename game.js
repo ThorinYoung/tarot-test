@@ -157,6 +157,29 @@ const REVIVE_LINES = {
   sword: "「我推演过一百次,你都会赢——别让我错这一次。」",
   cup:   "「我接住你了。没事了,慢慢来。」",
 };
+/* 远征结语(战绩卡):按战绩分档,驻场男主开口 */
+const SETTLE_LINES = {
+  wand:  { high: "烧穿了!这战绩,配得上和我并肩。",          mid: "不赖。下次,我们烧得更深一点。",       low: "别低头。火灭了可以再点,我陪你。" },
+  coin:  { high: "回报率超出预期——你是我最值得的投资。",     mid: "稳健的一局。收益已入账,继续。",       low: "亏损可控。下一局,连本带利赢回来。" },
+  sword: { high: "完美执行。我的推演第一次输给现实——心服。", mid: "中规中矩,但我看到了几手妙棋。",       low: "复盘交给我。你只需要记住:你还会再来。" },
+  cup:   { high: "你看,星星都在为你亮着。今晚做个好梦。",     mid: "走到这里已经很好了。茶还温着。",       low: "累了吧?裂隙明天还在,我也在。" },
+};
+
+/* ---------------- 星轨手账(跨局收集册,localStorage) ---------------- */
+const album = (() => {
+  const KEY = "sv_album";
+  function load() {
+    try { return JSON.parse(localStorage.getItem(KEY) || "null") || { relics: {}, courts: {}, runs: 0, maxLayer: 0 }; }
+    catch (e) { return { relics: {}, courts: {}, runs: 0, maxLayer: 0 }; }
+  }
+  function save(a) { try { localStorage.setItem(KEY, JSON.stringify(a)); } catch (e) {} }
+  return {
+    recRelic(key) { const a = load(); a.relics[key] = (a.relics[key] || 0) + 1; save(a); },
+    recCourt(rank, suit) { const a = load(); const k = `${rank}-${suit}`; a.courts[k] = (a.courts[k] || 0) + 1; save(a); },
+    recRun(cleared) { const a = load(); a.runs += 1; a.maxLayer = Math.max(a.maxLayer, cleared); save(a); },
+    data: load,
+  };
+})();
 
 /* 天象(v0.5):每次远征随机一种,全程生效 */
 const WEATHERS = [
@@ -1284,6 +1307,7 @@ function maybeCourtAssist(ev) {
   const suit = (ev.suit && pair.includes(ev.suit)) ? ev.suit : pair[Math.floor(Math.random() * pair.length)];
   const rank = courtRankFor(S.layer);
   S.assist = { rank, suit };
+  album.recCourt(rank, suit);
   renderAssist(true);
   sfx.relic();
   say(suit, `${COURT_SEND[suit]}<br><span style="color:var(--gold-bright)">【${SUITS[suit].name}${COURT_RANKS[rank]}】入驰援位——${COURT_FX[rank][suit].desc},点击发动。</span>`, 6500);
@@ -1441,6 +1465,7 @@ function spendDust(n) {
 }
 function grantRelic(key, rev) {
   S.relics.push({ key, rev: !!rev });
+  album.recRelic(key);
   rev ? sfx.rev() : sfx.relic();
   renderRelics();
 }
@@ -1833,11 +1858,30 @@ function showFail() {
 function showSettle() {
   const cleared = S.layer - 1;
   const isNewBest = recordBest();
+  album.recRun(cleared);
   const cm = S.commission;
+  /* 战绩卡:驻场男主结语(按战绩分档) */
+  const quoteSuit = cm ? cm.pair[Math.floor(Math.random() * 2)] : "cup";
+  const tier = cleared >= 6 ? "high" : cleared >= 3 ? "mid" : "low";
+  const quote = SETTLE_LINES[quoteSuit][tier];
+  const cardHtml = `
+    <div class="result-card" id="resultCard">
+      <div class="rc-top">✦ 星轨裁决 · 远征战绩 ✦</div>
+      ${cm ? `<div class="rc-comm">
+        <span class="ca" style="color:${SUITS[cm.pair[0]].color}"><svg viewBox="0 0 48 48" fill="none"><use href="${SUITS[cm.pair[0]].glyph}"/></svg></span>
+        <span class="rc-comm-t">「${cm.title}」</span>
+        <span class="ca" style="color:${SUITS[cm.pair[1]].color}"><svg viewBox="0 0 48 48" fill="none"><use href="${SUITS[cm.pair[1]].glyph}"/></svg></span>
+      </div>` : ""}
+      <div class="rc-big">${cleared > 0 ? `深入 第 ${cleared} 星层` : "止步 第一星层"}</div>
+      <div class="rc-stats">总共鸣 ${S.runScore} · 最高单手 ${S.bestPlay ? S.bestPlay.score : 0} · 异象 ${S.relics.length}</div>
+      <div class="rc-quote" style="color:${SUITS[quoteSuit].color}">${LEADS[quoteSuit].name}:「${quote}」</div>
+    </div>`;
   openModal(`
     <h2>远征结算</h2>
     <div class="sub">${cm ? `委托「${cm.title}」· ` : ""}天象「${S.weather ? S.weather.name : "—"}」· 版本${VER_NAMES[S.version]}</div>
     ${isNewBest ? `<p style="color:var(--gold-bright);font-family:var(--serif);letter-spacing:0.2em;margin:2px 0 0">✦ 新纪录 ✦</p>` : ""}
+    ${cardHtml}
+    <button class="btn-ghost" id="mSaveCard" style="margin-top:2px">保存战绩卡 PNG(分享位演示)</button>
     <div class="stat-grid">
       <div class="stat"><div class="v" data-cv="${cleared}">0</div><div class="k">稳定星层</div></div>
       <div class="stat"><div class="v" data-cv="${S.runScore}">0</div><div class="k">总共鸣</div></div>
@@ -1862,6 +1906,68 @@ function showSettle() {
   });
   $("mRestart").onclick = () => { closeModal(); showCommissionPick(S.version); };
   $("mTitle").onclick = () => { closeModal(); showTitle(); };
+  $("mSaveCard").onclick = () => downloadResultCard(cleared, quoteSuit, quote);
+}
+
+/* 战绩卡 PNG(Canvas 绘制,演示分享位;正式版=微信分享卡) */
+function downloadResultCard(cleared, quoteSuit, quote) {
+  const W = 540, H = 720;
+  const cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const cx = cv.getContext("2d");
+  const g = cx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, "#0c1228"); g.addColorStop(0.55, "#070b1a"); g.addColorStop(1, "#120d24");
+  cx.fillStyle = g; cx.fillRect(0, 0, W, H);
+  /* 星点 */
+  for (let i = 0; i < 90; i++) {
+    cx.fillStyle = `rgba(${Math.random() < 0.2 ? "232,200,140" : "190,205,255"},${0.25 + Math.random() * 0.5})`;
+    cx.beginPath(); cx.arc(Math.random() * W, Math.random() * H, Math.random() * 1.4 + 0.3, 0, 7); cx.fill();
+  }
+  /* 金框 */
+  cx.strokeStyle = "rgba(216,180,106,0.7)"; cx.lineWidth = 2;
+  cx.strokeRect(18, 18, W - 36, H - 36);
+  cx.strokeStyle = "rgba(216,180,106,0.25)"; cx.lineWidth = 1;
+  cx.strokeRect(26, 26, W - 52, H - 52);
+  /* 八芒星 */
+  cx.save(); cx.translate(W / 2, 120); cx.fillStyle = "rgba(216,180,106,0.9)";
+  cx.beginPath();
+  for (let i = 0; i < 8; i++) {
+    const a = (i * Math.PI) / 4, r1 = 34, r2 = 9;
+    cx.lineTo(Math.cos(a) * r1, Math.sin(a) * r1);
+    cx.lineTo(Math.cos(a + Math.PI / 8) * r2, Math.sin(a + Math.PI / 8) * r2);
+  }
+  cx.closePath(); cx.fill(); cx.restore();
+  const serif = "'Noto Serif SC', 'Songti SC', serif";
+  cx.textAlign = "center";
+  cx.fillStyle = "#f3d896"; cx.font = `28px ${serif}`;
+  cx.fillText("星 轨 裁 决", W / 2, 200);
+  cx.fillStyle = "#8b93ad"; cx.font = `13px ${serif}`;
+  cx.fillText("STARLIGHT VERDICT · 远征战绩", W / 2, 228);
+  if (S.commission) {
+    const [a, b] = S.commission.pair;
+    cx.font = `19px ${serif}`;
+    cx.fillStyle = SUITS[a].color; cx.fillText(LEADS[a].name, W / 2 - 86, 280);
+    cx.fillStyle = "#8b93ad"; cx.fillText(`—「${S.commission.title}」—`, W / 2, 280);
+    cx.fillStyle = SUITS[b].color; cx.fillText(LEADS[b].name, W / 2 + 86, 280);
+  }
+  cx.fillStyle = "#e9e4d6"; cx.font = `42px ${serif}`;
+  cx.fillText(cleared > 0 ? `深入 第 ${cleared} 星层` : "止步 第一星层", W / 2, 360);
+  cx.fillStyle = "#b9c0d4"; cx.font = `17px ${serif}`;
+  cx.fillText(`总共鸣 ${S.runScore}    最高单手 ${S.bestPlay ? S.bestPlay.score : 0}    异象 ${S.relics.length}`, W / 2, 410);
+  /* 结语 */
+  cx.fillStyle = SUITS[quoteSuit].color; cx.font = `17px ${serif}`;
+  const qline = `${LEADS[quoteSuit].name}:「${quote}」`;
+  if (qline.length > 22) {
+    cx.fillText(qline.slice(0, 22), W / 2, 480);
+    cx.fillText(qline.slice(22), W / 2, 508);
+  } else cx.fillText(qline, W / 2, 490);
+  cx.fillStyle = "rgba(216,180,106,0.55)"; cx.font = `12px ${serif}`;
+  cx.fillText("—— 裂隙仍在低鸣,而你已点亮星轨 ——", W / 2, 600);
+  cx.fillText("内部演示 · 数值未调优", W / 2, H - 52);
+  const a = document.createElement("a");
+  a.download = "starlight-verdict-result.png";
+  a.href = cv.toDataURL("image/png");
+  a.click();
 }
 
 function newRun() {
@@ -2032,6 +2138,43 @@ function recordBest() {
   return false;
 }
 
+/* ====== 星轨手账:跨局收集册 ====== */
+function showAlbum() {
+  const a = album.data();
+  const relicGot = RELICS.filter(r => a.relics[r.key]).length;
+  const courtGot = Object.keys(a.courts).length;
+  const relicCells = RELICS.map(r => {
+    const n = a.relics[r.key] || 0;
+    return n
+      ? `<div class="alb-cell got" style="color:${RARITY[r.rar].color}" title="${r.desc}">
+           <svg viewBox="0 0 24 24"><use href="${r.icon}"/></svg><span>${r.name}</span></div>`
+      : `<div class="alb-cell"><span class="alb-q">?</span><span>·</span></div>`;
+  }).join("");
+  const courtRows = Object.keys(COURT_RANKS).map(rank => {
+    const cells = SUIT_KEYS.map(su => {
+      const n = a.courts[`${rank}-${su}`] || 0;
+      return n
+        ? `<td class="alb-ct got" style="color:${SUITS[su].color}" title="${COURT_FX[rank][su].desc}">✓<small>${n}</small></td>`
+        : `<td class="alb-ct">?</td>`;
+    }).join("");
+    return `<tr><td class="alb-rk">${COURT_RANKS[rank]}</td>${cells}</tr>`;
+  }).join("");
+  openModal(`
+    <h2>星轨手账</h2>
+    <div class="sub">远征 ${a.runs} 次 · 最深 ${a.maxLayer} 层 · 异象 ${relicGot}/16 · 宫廷 ${courtGot}/16</div>
+    <div class="shop-sec">异 象 收 集</div>
+    <div class="alb-grid">${relicCells}</div>
+    <div class="shop-sec">宫 廷 牌 · 驰 援 录</div>
+    <table class="alb-table">
+      <tr><td></td>${SUIT_KEYS.map(su => `<td class="alb-su" style="color:${SUITS[su].color}">${LEADS[su].name}</td>`).join("")}</tr>
+      ${courtRows}
+    </table>
+    <p class="dim" style="margin-top:8px">收集跨远征累计——还没见过的,去裂隙里找。</p>
+    <button class="btn-main" id="mClose">合上手账</button>
+  `);
+  $("mClose").onclick = () => { closeModal(); showTitle(); };
+}
+
 function showTitle() {
   openModal(`
     <svg class="title-octa" viewBox="0 0 48 48"><use href="#glyph-octa"/></svg>
@@ -2043,6 +2186,7 @@ function showTitle() {
     <button class="btn-main btn-second" id="v3">Ⅲ · + 牌铭刻与铭刻卷${bestOf(3)}</button>
     <button class="btn-main btn-second" id="v4">Ⅳ · 完整版 · 异象逆位(硬核)${bestOf(4)}</button>
     <button class="btn-ghost" id="tStart">先看教学(以版本Ⅰ开始)</button>
+    <button class="btn-ghost" id="tAlbum" style="margin-top:8px">星轨手账(收集册)</button>
     <p class="dim" style="margin-top:12px">版本逐级叠加 · 对应 docs/04 §14 路线<br>数值未调优 · 男主反馈为文案演示</p>
   `);
   const start = (v) => showCommissionPick(v);
@@ -2051,6 +2195,7 @@ function showTitle() {
   $("v3").onclick = () => start(3);
   $("v4").onclick = () => start(4);
   $("tStart").onclick = () => showTutorial(0);
+  $("tAlbum").onclick = showAlbum;
 }
 
 /* ---------------- 绑定 ---------------- */

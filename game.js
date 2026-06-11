@@ -137,6 +137,27 @@ const COMMISSIONS = [
     intro: [["sword", "我守外侧。有我在,你不会输第二次。"], ["cup", "就算溃散也没关系——我接得住你。"]] },
 ];
 
+/* 回响星层(v0.7):每 3 层一次的 boss 规则层,随机一条特殊规则(挑战+补偿) */
+const BOSS_RULES = [
+  { key: "maw",        name: "巨喉", desc: "稳定阈值 ×1.5,但星屑报酬 ×2" },
+  { key: "eclipse",    name: "星蚀", desc: "手牌 -1 张,但每手 共鸣 ×1.2" },
+  { key: "turbulence", name: "乱流", desc: "每次校准后,剩余手牌强制弃换" },
+  { key: "echoCurse",  name: "回声", desc: "与上一手相同的裁决式 共鸣 ×0.5" },
+  { key: "greed",      name: "贪噬", desc: "本层校准 -1,但过层报酬 +30 星屑" },
+];
+const BOSS_LINES = {
+  wand:  "气压变了……回响星层。把手给我,这层我们硬闯。",
+  coin:  "回响星层。风险溢价已计入——收益也是,别怕。",
+  sword: "数据异常,是回响星层。规则变了,听我口令。",
+  cup:   "这层的星光……在哭。回响星层,我们轻一点走。",
+};
+const REVIVE_LINES = {
+  wand:  "「还没结束。我说还没,就还没。」",
+  coin:  "「这笔损失我垫。人没事,就不算输。」",
+  sword: "「我推演过一百次,你都会赢——别让我错这一次。」",
+  cup:   "「我接住你了。没事了,慢慢来。」",
+};
+
 /* 天象(v0.5):每次远征随机一种,全程生效 */
 const WEATHERS = [
   { key: "meteor", name: "流星雨", desc: "连星系裁决式 倍率 +1" },
@@ -482,6 +503,12 @@ function scoreWith(cards, ev, peek = false) {
     if (S.weather.key === "dusk" && S.playsUsed === 0) { post *= 1.25; notes.push("薄暮 ×1.25"); }
   }
 
+  /* 回响星层规则 */
+  if (S.bossRule) {
+    if (S.bossRule.key === "eclipse") { post *= 1.2; notes.push("星蚀 ×1.2"); }
+    if (S.bossRule.key === "echoCurse" && S.lastComboKey && ev.key === S.lastComboKey) { post *= 0.5; notes.push("回声 ×0.5"); }
+  }
+
   /* 宫廷驰援(V2):骑士/国王=下一手 buff;王后=本层持续 */
   if (S.nextBuff) {
     const b = S.nextBuff;
@@ -631,7 +658,13 @@ const S = {
   /* v0.6 宫廷驰援 */
   assist: null, assistGivenLayer: false,
   nextBuff: null, layerCourt: null,
+  /* v0.7 回响星层 */
+  bossRule: null,
 };
+
+function handSizeNow() {
+  return RULES.handSize - (S.bossRule && S.bossRule.key === "eclipse" ? 1 : 0);
+}
 
 function buildRunDeck() {
   /* 数字库恒定 40 张(§14.1:宫廷牌不进牌库,复杂度藏内容不藏规则) */
@@ -666,6 +699,8 @@ function rewardFor() {
   const over = Math.min(12, Math.floor((S.layerScore / S.threshold - 1) * 20));
   if (over > 0) { parts.push(["溢出共鸣", over]); n += over; }
   if (S.commission && S.commission.key === "ledgerNight") { parts.push(["深夜账房", 6]); n += 6; }
+  if (S.bossRule && S.bossRule.key === "greed") { parts.push(["回响 · 贪噬", 30]); n += 30; }
+  if (S.bossRule && S.bossRule.key === "maw") { parts.push(["回响 · 巨喉 ×2", n]); n *= 2; }
   if (S.weather && S.weather.key === "tide") { const b = Math.round(n * 0.5); parts.push(["引力潮 ×1.5", b]); n += b; }
   const wld = relicOf("world");
   if (wld && wld.rev) { parts.push(["世界·逆", -10]); n = Math.max(0, n - 10); }
@@ -839,7 +874,7 @@ function renderCounters() {
   $("playsLeft").classList.toggle("depleted", S.plays <= 1);
   $("swapsLeft").textContent = S.swaps;
   $("swapsLeft").classList.toggle("depleted", S.swaps <= 0);
-  $("layerName").textContent = layerLabel(S.layer);
+  $("layerName").textContent = layerLabel(S.layer) + (S.bossRule ? " ☄" : "");
   $("verTag").textContent = VER_NAMES[S.version];
   $("meterGoal").textContent = S.threshold;
   const slot = $("btnArcana");
@@ -948,8 +983,16 @@ async function onPlay() {
     sfx.fail();
     await breakdownShow();
     showFail();
+  } else if (S.bossRule && S.bossRule.key === "turbulence") {
+    /* 乱流:校准后剩余手牌强制弃换 */
+    S.discard.push(...S.hand.splice(0));
+    S.hand = draw(handSizeNow());
+    S.selected.clear();
+    S.busy = false;
+    sfx.swap();
+    renderHand(); renderCounters();
   } else {
-    const got = draw(RULES.handSize - S.hand.length);
+    const got = draw(handSizeNow() - S.hand.length);
     S.hand.push(...got);
     S.busy = false;
     renderHand(S.hand.length - got.length); renderCounters();
@@ -1147,7 +1190,8 @@ function layerIntro() {
   intro.className = "layer-intro";
   const wLine = S.weather ? `<div class="li-weather">天象 · ${S.weather.name}:${S.weather.desc}</div>` : "";
   const cmLine = S.commission ? `<div class="li-weather" style="color:var(--gold)">委托「${S.commission.title}」· ${LEADS[S.commission.pair[0]].name} × ${LEADS[S.commission.pair[1]].name}</div>` : "";
-  intro.innerHTML = `<div class="li-name">${layerLabel(S.layer)}</div><div class="li-goal">稳定阈值 ${S.threshold}</div>${cmLine}${wLine}`;
+  const bLine = S.bossRule ? `<div class="li-weather" style="color:#ff5b6e;text-shadow:0 0 10px rgba(255,91,110,0.5)">☄ 回响星层 · ${S.bossRule.name}:${S.bossRule.desc}</div>` : "";
+  intro.innerHTML = `<div class="li-name">${layerLabel(S.layer)}</div><div class="li-goal">稳定阈值 ${S.threshold}</div>${bLine}${cmLine}${wLine}`;
   $("stage").appendChild(intro);
   setTimeout(() => intro.remove(), 1900);
 }
@@ -1326,7 +1370,7 @@ async function onArcana() {
     .sort((a, b) => bySuit[b].length - bySuit[a].length)[0];
   if (richSuit) rigged = bySuit[richSuit].slice(0, 3);
   rigged.forEach(c => S.deck.splice(S.deck.indexOf(c), 1));
-  S.hand = shuffle([...rigged, ...draw(RULES.handSize - rigged.length)]);
+  S.hand = shuffle([...rigged, ...draw(handSizeNow() - rigged.length)]);
   S.selected.clear();
 
   await wait(450);
@@ -1338,13 +1382,16 @@ async function onArcana() {
 
 /* ---------------- 层级流转 ---------------- */
 function startLayer() {
+  /* 回响星层:每 3 层一次,随机规则 */
+  S.bossRule = (S.layer % 3 === 0) ? BOSS_RULES[Math.floor(Math.random() * BOSS_RULES.length)] : null;
   S.threshold = thresholdOf(S.layer);
   if (S.weather && S.weather.key === "tide") S.threshold = Math.round((S.threshold * 1.2) / 5) * 5;
+  if (S.bossRule && S.bossRule.key === "maw") S.threshold = Math.round((S.threshold * 1.5) / 5) * 5;
   S.deck = shuffle([...S.runDeck]);
   S.discard = [];
-  S.hand = draw(RULES.handSize);
+  S.hand = draw(handSizeNow());
   S.selected.clear();
-  S.plays = RULES.plays;
+  S.plays = RULES.plays - (S.bossRule && S.bossRule.key === "greed" ? 1 : 0);
   const hng = relicOf("hanged");
   if (hng && hng.rev) S.plays -= 1;
   const moon = relicOf("moon");
@@ -1367,7 +1414,8 @@ function startLayer() {
   /* 驻场男主在委托双主间逐层轮换 + 开场台词 */
   dutyLead = S.commission ? S.commission.pair[(S.layer - 1) % 2]
     : SUIT_KEYS[Math.floor(Math.random() * 4)];
-  setTimeout(idleLine, 900);
+  if (S.bossRule) setTimeout(() => say(dutyLead, BOSS_LINES[dutyLead], 6000), 1000);
+  else setTimeout(idleLine, 900);
 }
 
 /* ====== v0.5 过层流程:结算(星屑)→ 免费回赠 → 星象集市 → 下一层 ====== */
@@ -1758,16 +1806,24 @@ function showGacha() {
 
 function showFail() {
   if (S.revives > 0) {
+    /* 男主救场:驻场双主之一伸手拉住玩家(正式版=男主救场/广告/分享复活位) */
+    const pair = S.commission ? S.commission.pair : ["cup"];
+    const su = pair[Math.floor(Math.random() * pair.length)];
+    const ld = LEADS[su].name;
     openModal(`
       <h2>星轨溃散</h2>
       <div class="sub">${layerLabel(S.layer)} · 稳定度未达成</div>
       <p>共鸣 <b class="kw">${S.layerScore}</b> / ${S.threshold}</p>
-      <p class="dim">一道熟悉的回响穿过裂隙而来——</p>
-      <button class="btn-main" id="mRevive">回响复活(剩 ${S.revives} 次)</button>
+      <p class="dim">裂隙的轰鸣里,一只手稳稳抓住了你的手腕——</p>
+      <p style="color:${SUITS[su].color};font-family:var(--serif);letter-spacing:0.06em">${ld}:${REVIVE_LINES[su]}</p>
+      <button class="btn-main" id="mRevive" style="border-color:${SUITS[su].color}">抓住他的手——重整星轨(剩 ${S.revives} 次)</button>
       <p class="dim" style="margin-top:8px">内部演示:正式版此处为「男主救场 / 广告 / 分享」复活位</p>
-      <button class="btn-ghost" id="mSettle">结束远征,结算</button>
+      <button class="btn-ghost" id="mSettle">松开手,结束远征</button>
     `);
-    $("mRevive").onclick = () => { S.revives--; closeModal(); startLayer(); };
+    $("mRevive").onclick = () => {
+      S.revives--; closeModal(); startLayer();
+      setTimeout(() => say(su, "「我在。这次,我们一起把它缝完。」", 5000), 1200);
+    };
     $("mSettle").onclick = () => { closeModal(); showSettle(); };
   } else {
     showSettle();
@@ -1893,6 +1949,7 @@ function showCodexModal() {
   const ctx = [];
   if (S.commission) ctx.push(`委托「${S.commission.title}」:${LEADS[S.commission.pair[0]].name} × ${LEADS[S.commission.pair[1]].name} —— 两人花色 底分 +1/张;${S.commission.perk}。`);
   if (S.weather) ctx.push(`天象「${S.weather.name}」:${S.weather.desc}。`);
+  if (S.bossRule) ctx.push(`<span style="color:#ff5b6e">☄ 回响星层「${S.bossRule.name}」:${S.bossRule.desc}。每 3 层降临一次。</span>`);
   const extras = [];
   if (S.version >= 2) extras.push("宫廷牌·男主驰援:打出②批次以上,驻场男主送宫廷牌至左下驰援位(存 1,每层保底 1 次),点击发动;等级随层深上浮(侍从→骑士→王后→国王)。");
   if (S.version >= 3) extras.push("牌铭刻:◆ 标记的印记带永久铭刻(镶星/饰金/共鸣/回响/辉煌)。");

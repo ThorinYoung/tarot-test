@@ -560,8 +560,8 @@ function cardEl(card, idx, n, animate = true, delayBase = 0) {
   if (animate) el.style.animationDelay = `${Math.max(0, idx - delayBase) * 0.05}s`;
   if (isDual) { el.style.setProperty("--d1", s1.color); el.style.setProperty("--d2", s2.color); }
   const t = idx - (n - 1) / 2;
-  el.style.setProperty("--rot", `${(t * 2.4).toFixed(1)}deg`);
-  el.style.setProperty("--arc", `${(Math.abs(t) * 3).toFixed(1)}px`);
+  el.style.setProperty("--rot", `${(t * 2).toFixed(1)}deg`);
+  el.style.setProperty("--arc", `${(Math.abs(t) * 2.2).toFixed(1)}px`);
   el.innerHTML = `
     <div class="idx">
       <div class="rank">${card.rank}</div>
@@ -639,9 +639,7 @@ function renderRelics() {
     const el = document.createElement("button");
     el.className = "relic" + (r.rev ? " rev" : "");
     el.innerHTML = `<svg viewBox="0 0 24 24"><use href="${def.icon}"/></svg>`;
-    el.addEventListener("click", () => toast(
-      `<span class="lead-name" style="color:${r.rev ? "#cfa6ff" : "var(--gold-bright)"}">${def.name}${r.rev ? "·逆" : ""}</span>${r.rev ? def.rdesc : def.desc}`,
-      r.rev ? "#b07cff" : null));
+    el.addEventListener("click", () => say(null, `「${def.name}${r.rev ? "·逆" : ""}」${r.rev ? def.rdesc : def.desc}`));
     row.appendChild(el);
   });
   const empties = Math.max(0, 3 - S.relics.length);
@@ -686,7 +684,7 @@ function onCardTap(idx) {
   if (S.selected.has(idx)) { S.selected.delete(idx); sfx.deselect(); }
   else {
     if (S.selected.size >= RULES.maxPlay) {
-      toast(`<span class="lead-name" style="color:var(--gold-bright)">星轨已满</span>一次校准最多打出 ${RULES.maxPlay} 张印记`);
+      say(null, `星轨已满——一次校准最多打出 ${RULES.maxPlay} 张印记。`);
       return;
     }
     S.selected.add(idx); sfx.select();
@@ -697,7 +695,7 @@ function onCardTap(idx) {
 async function onSwap() {
   if (S.busy || S.selected.size === 0 || S.swaps <= 0) return;
   if (S.selected.size > RULES.maxSwap) {
-    toast(`<span class="lead-name" style="color:var(--gold-bright)">重引受限</span>一次最多弃换 ${RULES.maxSwap} 张,请减少选择`);
+    say(null, `重引受限——一次最多弃换 ${RULES.maxSwap} 张,请减少选择。`);
     return;
   }
   S.busy = true; S.swaps--;
@@ -711,8 +709,8 @@ async function onSwap() {
   S.hand.push(...got);
   S.selected.clear();
   const moon = relicOf("moon");
-  if (moon && !moon.rev) { S.moonCharge = true; toast(`<span class="lead-name" style="color:var(--gold-bright)">月亮</span>潮汐充能——下一手共鸣 ×1.5`); }
-  if (moon && moon.rev) { S.moonStack += 0.25; toast(`<span class="lead-name" style="color:#cfa6ff">月亮·逆</span>本层乘区 ×${(1 + S.moonStack).toFixed(2)}`, "#b07cff"); }
+  if (moon && !moon.rev) { S.moonCharge = true; say(null, "「月亮」潮汐充能——下一手共鸣 ×1.5。"); }
+  if (moon && moon.rev) { S.moonStack += 0.25; say(null, `「月亮·逆」本层乘区 ×${(1 + S.moonStack).toFixed(2)}。`); }
   S.busy = false;
   renderHand(S.hand.length - got.length); renderCounters();
 }
@@ -958,29 +956,47 @@ function layerIntro() {
   setTimeout(() => intro.remove(), 1700);
 }
 
-let toastTimer = null;
-function toast(html, color) {
-  const t = $("leadToast");
-  t.innerHTML = html;
-  t.style.borderColor = color || "rgba(216,180,106,0.45)";
-  t.classList.add("show");
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove("show"), 2400);
+/* ====== 男主对话位:say() 系统 ====== */
+const LEAD_IDLE = {
+  wand:  ["裂隙在低鸣。跟紧我,别走丢。", "出牌干脆点——犹豫才会输。"],
+  coin:  ["按你的节奏来,我看着账。", "每一张印记,都该花在刀刃上。"],
+  sword: ["我已经看过牌堆了……开玩笑的。", "想好再出,我讨厌返工。"],
+  cup:   ["慢慢来,裂隙又不会跑。", "你刚才那一手,比你以为的漂亮。"],
+};
+let dutyLead = "cup";
+let sayTimer = null;
+function say(suit, text, hold = 4500) {
+  const av = $("leadAvatar"), glyph = $("leadGlyph"), name = $("lbName");
+  if (suit && SUITS[suit]) {
+    av.style.color = SUITS[suit].color;
+    glyph.setAttribute("href", SUITS[suit].glyph);
+    name.textContent = LEADS[suit].name;
+    name.style.color = SUITS[suit].color;
+  } else {
+    av.style.color = "#d8b46a";
+    glyph.setAttribute("href", "#glyph-octa");
+    name.textContent = "✦ 星盘";
+    name.style.color = "#f3d896";
+  }
+  $("lbText").innerHTML = text;
+  const b = document.querySelector(".lead-bubble");
+  b.classList.remove("bubble-on"); void b.offsetWidth; b.classList.add("bubble-on");
+  clearTimeout(sayTimer);
+  if (hold) sayTimer = setTimeout(idleLine, hold);
+}
+function idleLine() {
+  const lines = LEAD_IDLE[dutyLead];
+  say(dutyLead, lines[Math.floor(Math.random() * lines.length)], 0);
 }
 
-function suitAvatar(suitKey) {
-  const s = SUITS[suitKey];
-  return `<svg class="toast-av" style="color:${s.color}" viewBox="0 0 48 48" fill="none"><use href="${s.glyph}"/></svg>`;
-}
 function leadReaction(ev) {
   if (ev.key === "tetra") {
-    toast(`<span class="lead-name" style="color:var(--gold-bright)">✦ 四象共鸣</span>四道星轨,同时为你亮起。`);
+    say(null, "四象共鸣——四道星轨,同时为你亮起。");
   } else if (ev.suit && GLOWS.includes(ev.key)) {
     const lead = LEADS[ev.suit];
-    const line = lead.lines[Math.floor(Math.random() * lead.lines.length)];
-    toast(`${suitAvatar(ev.suit)}<span class="lead-name" style="color:${SUITS[ev.suit].color}">${lead.name}</span>${line}`, SUITS[ev.suit].color);
+    say(ev.suit, lead.lines[Math.floor(Math.random() * lead.lines.length)]);
   } else if (ev.key === "fullPhase") {
-    toast(`<span class="lead-name" style="color:var(--gold-bright)">✦ 星盘震颤</span>四枚同阶印记,命运罕见地整齐。`);
+    say(null, "星盘震颤——四枚同阶印记,命运罕见地整齐。");
   }
 }
 
@@ -1009,7 +1025,7 @@ async function onArcana() {
 
   await wait(450);
   slot.classList.remove("spinning");
-  toast(`<span class="lead-name" style="color:var(--gold-bright)">命运之轮</span>命运重转——这一手,是它欠你的。`);
+  say(null, "命运之轮重转——这一手,是它欠你的。");
   S.busy = false;
   renderHand(); renderCounters();
 }
@@ -1034,6 +1050,9 @@ function startLayer() {
   rift.build();
   renderHand(); renderCounters(); renderRelics();
   layerIntro();
+  /* 驻场男主轮换 + 开场台词 */
+  dutyLead = SUIT_KEYS[Math.floor(Math.random() * 4)];
+  setTimeout(idleLine, 900);
 }
 
 /* 过层奖励:V1/V2 = 3 异象;V3+ = 2 异象 + 1 牌强化;V4 异象可逆位 */
@@ -1079,7 +1098,7 @@ function showLayerClear() {
         o.rev ? sfx.rev() : sfx.relic();
         const def = RELIC_MAP[o.key];
         closeModal(); S.layer++; startLayer();
-        toast(`<span class="lead-name" style="color:${o.rev ? "#cfa6ff" : "var(--gold-bright)"}">${def.name}${o.rev ? "·逆" : ""}</span>${o.rev ? def.rdesc : def.desc}`, o.rev ? "#b07cff" : null);
+        say(null, `收下「${def.name}${o.rev ? "·逆" : ""}」——${o.rev ? def.rdesc : def.desc}`);
       } else {
         showEnhancePick(o.ekey);
       }
@@ -1113,7 +1132,7 @@ function showEnhancePick(ekey) {
       c.enh = ekey;
       sfx.relic();
       closeModal(); S.layer++; startLayer();
-      toast(`<span class="lead-name" style="color:${e.color}">铭刻成功</span>${SUITS[suitOptionsOf(c)[0]].name} ${c.rank} 已获得「${e.name}」`);
+      say(null, `铭刻成功——${SUITS[suitOptionsOf(c)[0]].name} ${c.rank} 已获得「${e.name}」。`);
     });
   });
   $("mCancel").onclick = () => { closeModal(); S.layer++; startLayer(); };

@@ -242,6 +242,45 @@ const COURT_SEND = {
 const RULES = { handSize: 7, plays: 4, swaps: 3, maxPlay: 5, maxSwap: 3, arcanaUses: 1, revives: 1 };
 const REV_CHANCE = 0.35;
 
+/* ====== 首夜切片(方案 J,docs/09 §3):剧情包裹 + 缓曲线 + 渐进教学 ======
+   曲线 (80,1.28^n) 5 层短局,目标首局通关率 ≥85%(对照硬核模式 (150,1.42^n) 10 层)。
+   台词为占位稿,终稿以编剧为准。 */
+const STORY_THRESH = [80, 100, 130, 170, 215];
+const STORY_FINAL = 5;
+const STORY_TIPS = {
+  1: "首夜引导:选中 <b>两张同星阶</b> 凝成「对印」,再点「校 准」",
+  2: "新式子 ——「同辉」三张同花色 ·「连星」三张星阶连续",
+  3: "异象已生效,它会自动改写计分——这层照常缝合",
+  4: "双主驻场!打出②批次以上裁决式,男主会送宫廷牌到左下驰援位",
+  5: "首夜终章——用上你学会的一切,缝合它",
+};
+const STORY_DLG = {
+  s1: [
+    [null,    "警告——无尽电梯检测到裂隙湍流,临时停驻。检测到未注册的星盘共鸣者:苏星轮。"],
+    ["sword", "别慌,站到我身后。……不,还是站我旁边吧,看得清。"],
+    ["sword", "裂隙在吞星光。下方那排「印记」——选中两张同星阶,就能凝成「对印」,星轨会替你把裂缝缝上。"],
+    ["sword", "金色微光标出的,是此刻最好的一手。照着打,我看着你。"],
+  ],
+  l1win: [
+    ["sword", "……稳住了。第一次就有这种完成度,你比情报里写的更有趣。"],
+    ["sword", "下一层教你两个新式子:「同辉」——三张同花色;「连星」——三张星阶连续。组合越华丽,缝合越长。"],
+    [null,    "提示:左下「命运之轮」每层一次——命运重转,必有一手好牌。"],
+  ],
+  s3: [
+    ["cup", "嘘——听见了吗?星核穹顶在响。它在认你。"],
+    ["cup", "裂隙深处偶尔会浮出「异象」——大阿卡纳的碎片。接住它,整夜远征都会受它庇佑。"],
+    ["cup", "选一枚吧。从今夜起,它只听你的。"],
+  ],
+  l3win: [
+    [null, "叮!首笔星屑报酬已入账——✦ 星屑是裂隙的结晶,可在「星象集市」兑换异象与牌库雕琢。"],
+    [null, "行商「时雨」已在层间支起摊位。先随便逛逛,不买也没关系!"],
+  ],
+  s4: [
+    [null, "叮——事务所第一张正式委托抵达!本夜裂隙强度上升,允许两位先生同时驻场。"],
+    [null, "「驰援」同步解锁:打出②批次以上的裁决式,驻场男主会送出宫廷牌支援!"],
+  ],
+};
+
 /* 阈值曲线 v0.9.1:基于 250 局贪心 bot 模拟扫描定参——
    (100,1.35) bot 100% 通关(碾压);(150,1.42) bot 60% 通关且失败集中 6-10 层、
    终焉层为最大卡点 → 取后者。真人预估通关率 10-25%,正式调参等内测(docs/05) */
@@ -251,7 +290,8 @@ function thresholdOf(layer) {
 const LAYER_NAMES = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
 const FINAL_LAYER = 10;
 function layerLabel(n) {
-  if (n === FINAL_LAYER) return "裂隙 · 终焉星层";
+  if (S.story && n === STORY_FINAL) return "裂隙 · 首夜终章";
+  if (!S.story && n === FINAL_LAYER) return "裂隙 · 终焉星层";
   return n <= 10 ? `裂隙 · 第${LAYER_NAMES[n - 1]}星层` : `裂隙 · 第${n}星层`;
 }
 const VER_NAMES = { 1: "Ⅰ", 2: "Ⅱ", 3: "Ⅲ", 4: "Ⅳ" };
@@ -699,6 +739,8 @@ const S = {
   nextBuff: null, layerCourt: null,
   /* v0.7 回响星层 */
   bossRule: null,
+  /* v0.10 首夜切片 */
+  story: null, storyTip: null,
 };
 
 function handSizeNow() {
@@ -868,7 +910,10 @@ function renderScoreBar(suggestion) {
   hint.classList.remove("notes");
   if (S.selected.size === 0) {
     setBar("—", 0, 0, 0, true);
-    if (S.guide === "strong" && suggestion) {
+    if (S.storyTip) {
+      hint.innerHTML = `<span style="color:var(--gold-bright)">${S.storyTip}</span>`
+        + (S.guide === "strong" && suggestion ? `<br>星轨指引:可凝聚 <span class="kw">${suggestion.ev.name}</span>(预计 ${suggestion.score})` : "");
+    } else if (S.guide === "strong" && suggestion) {
       hint.innerHTML = `星轨指引:可凝聚 <span class="kw">${suggestion.ev.name}</span>(预计 ${suggestion.score})`;
     } else {
       hint.textContent = "点选下方印记,凝聚星轨缝合裂隙";
@@ -945,8 +990,29 @@ function onCardTap(idx) {
       return;
     }
     S.selected.add(idx); sfx.select();
+    tapFly(idx);
   }
   applySelection();
+}
+
+/* 逐张选牌飞分(docs/09 §3:反馈前移到每一次点击,全模式生效) */
+function tapFly(idx) {
+  const el = $("hand").children[idx];
+  const card = S.hand[idx];
+  if (!el || !card) return;
+  const from = el.getBoundingClientRect();
+  const to = $("sbTotal").getBoundingClientRect();
+  const f = document.createElement("div");
+  f.className = "tap-fly";
+  f.textContent = `+${card.rank}`;
+  f.style.left = `${from.left + from.width / 2 - 8}px`;
+  f.style.top = `${from.top - 6}px`;
+  document.body.appendChild(f);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    f.style.transform = `translate(${to.left - from.left - from.width / 2}px, ${to.top - from.top}px) scale(0.7)`;
+    f.style.opacity = "0";
+  }));
+  setTimeout(() => { f.remove(); bumpEl($("sbTotal")); }, 460);
 }
 
 async function onSwap() {
@@ -1017,7 +1083,8 @@ async function onPlay() {
   if (S.layerScore >= S.threshold) {
     sfx.clear();
     await sealCelebration();
-    if (S.layer >= FINAL_LAYER) { S.layer++; showVictory(); }
+    if (S.story) { await storyAfterLayer(); }
+    else if (S.layer >= FINAL_LAYER) { S.layer++; showVictory(); }
     else showLayerClear();
   } else if (S.plays <= 0) {
     sfx.fail();
@@ -1378,7 +1445,8 @@ async function onAssist() {
         say(suit, `「看好了。」${LEADS[suit].name}亲手缝上了裂隙的最后一寸。`);
         sfx.clear();
         await sealCelebration();
-        if (S.layer >= FINAL_LAYER) { S.layer++; showVictory(); }
+        if (S.story) { await storyAfterLayer(); }
+        else if (S.layer >= FINAL_LAYER) { S.layer++; showVictory(); }
         else showLayerClear();
         renderCounters();
         return;
@@ -1424,15 +1492,19 @@ async function onArcana() {
 
 /* ---------------- 层级流转 ---------------- */
 function startLayer() {
-  /* 回响星层:每 3 层一次;终焉星层(第 10 层)必现 */
-  S.bossRule = (S.layer % 3 === 0 || S.layer === FINAL_LAYER)
+  /* 回响星层:每 3 层一次;终焉星层(第 10 层)必现。首夜切片无 boss 层 */
+  S.bossRule = (!S.story && (S.layer % 3 === 0 || S.layer === FINAL_LAYER))
     ? BOSS_RULES[Math.floor(Math.random() * BOSS_RULES.length)] : null;
-  S.threshold = thresholdOf(S.layer);
+  S.threshold = S.story
+    ? STORY_THRESH[Math.min(S.layer, STORY_FINAL) - 1]
+    : thresholdOf(S.layer);
   if (S.weather && S.weather.key === "tide") S.threshold = Math.round((S.threshold * 1.2) / 5) * 5;
   if (S.bossRule && S.bossRule.key === "maw") S.threshold = Math.round((S.threshold * 1.5) / 5) * 5;
   S.deck = shuffle([...S.runDeck]);
   S.discard = [];
   S.hand = draw(handSizeNow());
+  if (S.story && S.layer === 1) ensurePairInHand();
+  S.storyTip = S.story ? (STORY_TIPS[S.layer] || null) : null;
   S.selected.clear();
   S.plays = RULES.plays - (S.bossRule && S.bossRule.key === "greed" ? 1 : 0);
   const hng = relicOf("hanged");
@@ -1453,16 +1525,40 @@ function startLayer() {
   $("comboBanner").className = "combo-banner";
   rift.build();
   renderHand(); renderCounters(); renderRelics(); renderDust(); renderAssist();
+  /* 首夜渐进显隐:星屑/异象槽 L3 起亮相,命运之轮 L2 起亮相(docs/09 §3「S1/S2 隐藏经济」) */
+  $("dustHud").style.display = (S.story && S.layer < 3) ? "none" : "";
+  $("relicRow").style.display = (S.story && S.layer < 3) ? "none" : "";
+  $("btnArcana").style.display = (S.story && S.layer === 1) ? "none" : "";
   layerIntro();
-  /* 驻场男主在委托双主间逐层轮换 + 开场台词 */
-  dutyLead = S.commission ? S.commission.pair[(S.layer - 1) % 2]
+  /* 驻场男主在委托双主间逐层轮换 + 开场台词;首夜 L1-2 叶渊 / L3 宋以衡(教学锚点) */
+  dutyLead = S.story && !S.commission ? (S.layer <= 2 ? "sword" : "cup")
+    : S.commission ? S.commission.pair[(S.layer - 1) % 2]
     : SUIT_KEYS[Math.floor(Math.random() * 4)];
   if (S.bossRule) setTimeout(() => say(dutyLead, BOSS_LINES[dutyLead], 6000), 1000);
   else setTimeout(idleLine, 900);
 }
 
+/* 首夜 L1:确保开手必有一组对印(教学必赢) */
+function ensurePairInHand() {
+  const byRank = {};
+  for (const c of S.hand) { if (byRank[c.rank]) return; byRank[c.rank] = true; }
+  const want = S.hand[0].rank;
+  const i = S.deck.findIndex(c => c.rank === want);
+  if (i >= 0) { S.discard.push(S.hand.pop()); S.hand.push(S.deck.splice(i, 1)[0]); }
+}
+
 /* ====== v0.5 过层流程:结算(星屑)→ 免费回赠 → 星象集市 → 下一层 ====== */
-function nextLayer() { closeModal(); S.layer++; startLayer(); }
+async function nextLayer() {
+  closeModal();
+  /* 首夜 S4:L3 → L4 之间插入委托教学(docs/09 §1 剧情点 S4) */
+  if (S.story && S.layer === 3 && !S.commission) {
+    S.layer++;
+    await runStoryDialogue(STORY_DLG.s4);
+    storyCommissionPick();
+    return;
+  }
+  S.layer++; startLayer();
+}
 
 function rarBadge(rar) { return `<span class="rar-tag rar-${rar}">${RARITY[rar].name}</span>`; }
 function rollRarity(weights) {
@@ -1854,6 +1950,25 @@ function showGacha() {
 }
 
 function showFail() {
+  /* 首夜:无限重试这一层(休闲化),不走结算 */
+  if (S.story) {
+    const su = S.commission ? S.commission.pair[Math.floor(Math.random() * 2)] : (S.layer <= 2 ? "sword" : "cup");
+    openModal(`
+      <h2>星光散了</h2>
+      <div class="sub">${layerLabel(S.layer)} · 共鸣 ${S.layerScore}/${S.threshold}</div>
+      <p class="dim">没关系——首夜的裂隙有人陪你慢慢缝。</p>
+      <p style="color:${SUITS[su].color};font-family:var(--serif);letter-spacing:0.06em">${LEADS[su].name}:${REVIVE_LINES[su]}</p>
+      <button class="btn-main" id="mRetry" style="border-color:${SUITS[su].color}">握住他的手,再试这一层</button>
+      <button class="btn-ghost" id="mQuitStory">先回标题</button>
+    `);
+    $("mRetry").onclick = () => {
+      S.story.retries = (S.story.retries || 0) + 1;
+      closeModal(); startLayer();
+      setTimeout(() => say(su, "「我在。这次,我们一起把它缝完。」", 5000), 1200);
+    };
+    $("mQuitStory").onclick = () => { S.story = null; S.storyTip = null; closeModal(); showTitle(); };
+    return;
+  }
   if (S.revives > 0) {
     /* 男主救场:驻场双主之一伸手拉住玩家(正式版=男主救场/广告/分享复活位) */
     const pair = S.commission ? S.commission.pair : ["cup"];
@@ -2217,12 +2332,169 @@ function showAlbum() {
   $("mClose").onclick = () => { closeModal(); showTitle(); };
 }
 
+/* ================== 首夜切片(方案 J,docs/09 §3) ================== */
+/* 阻塞式剧情对白:打字机 + 点击推进(台词为占位稿,终稿以编剧为准) */
+function runStoryDialogue(seq) {
+  return new Promise((resolve) => {
+    const layer = $("svDlg");
+    let i = 0, typing = false, timer = null;
+    function show() {
+      const [su, text] = seq[i];
+      if (su && SUITS[su]) {
+        $("svAvaGlyph").setAttribute("href", SUITS[su].glyph);
+        $("svAva").style.color = SUITS[su].color;
+        $("svName").textContent = LEADS[su].name;
+      } else {
+        $("svAvaGlyph").setAttribute("href", "#glyph-octa");
+        $("svAva").style.color = "#d8b46a";
+        $("svName").textContent = "AI 灵宝";
+      }
+      const t = $("svText"); t.textContent = ""; typing = true;
+      let c = 0;
+      timer = setInterval(() => {
+        c++; t.textContent = text.slice(0, c);
+        if (c >= text.length) { clearInterval(timer); typing = false; }
+      }, 24);
+    }
+    function tap() {
+      if (typing) { clearInterval(timer); $("svText").textContent = seq[i][1]; typing = false; return; }
+      i++;
+      if (i >= seq.length) { layer.style.display = "none"; layer.onclick = null; resolve(); }
+      else show();
+    }
+    layer.style.display = "flex"; layer.onclick = tap; show();
+  });
+}
+
+/* 首夜入口:S1 电梯惊停 → L1 */
+async function startStoryNight() {
+  closeModal();
+  S.story = { retries: 0 };
+  S.version = 1; S.commission = null; S.weather = null;
+  S.layer = 1; S.revives = RULES.revives;
+  S.runScore = 0; S.bestPlay = null; S.lit = new Set();
+  S.relics = []; S.moonCharge = false; S.moonStack = 0;
+  S.dust = 0; S.dustEarned = 0;
+  S.gachaPity = 0; S.purges = 0; S.lastComboKey = null;
+  S.assist = null; S.nextBuff = null; S.layerCourt = null;
+  shopState = null;
+  S.guide = "strong";
+  S.runDeck = buildRunDeck();
+  S.started = true;
+  await runStoryDialogue(STORY_DLG.s1);
+  startLayer();
+}
+
+/* 过层剧情流:L1 教学衔接 / L2 异象初见 / L3 经济亮相 / L5 完结 */
+async function storyAfterLayer() {
+  const L = S.layer;
+  if (L === 1) { await runStoryDialogue(STORY_DLG.l1win); S.layer++; startLayer(); return; }
+  if (L === 2) { await runStoryDialogue(STORY_DLG.s3); storyGiftPick(); return; }
+  if (L === 3) { await runStoryDialogue(STORY_DLG.l3win); showLayerClear(); return; }
+  if (L >= STORY_FINAL) { S.layer++; storyVictory(); return; }
+  showLayerClear(); /* L4:常规结算+集市 */
+}
+
+/* S3 异象回赠:固定凡象/秘象池三选一(不开天启,不掺星屑——经济 L3 才亮相) */
+function storyGiftPick() {
+  const pool = shuffle(unownedRelics().filter(r => r.rar !== "l")).slice(0, 3);
+  const html = pool.map((def, i) => `
+    <button class="relic-pick rl-${def.rar}" data-i="${i}">
+      <span class="rp-icon"><svg viewBox="0 0 24 24"><use href="${def.icon}"/></svg></span>
+      <span><span class="rp-name">${def.name}</span>${rarBadge(def.rar)}<div class="rp-desc">${def.desc}</div></span>
+    </button>`).join("");
+  openModal(`
+    <h2>星象低语</h2>
+    <div class="sub">星核穹顶垂下三道微光 · 选取其一</div>
+    ${html}
+  `);
+  [...document.querySelectorAll(".relic-pick")].forEach(btn => {
+    btn.addEventListener("click", () => {
+      const def = pool[+btn.dataset.i];
+      grantRelic(def.key, false);
+      say("cup", `「${def.name}」认下你了——${def.desc}。`, 6000);
+      nextLayer();
+    });
+  });
+}
+
+/* S4 委托二选一(固定两份,教学版;正式版由剧情章节决定驻场) */
+function storyCommissionPick() {
+  const picks = [COMMISSIONS.find(c => c.key === "coldGambit"), COMMISSIONS.find(c => c.key === "flameTide")];
+  const html = picks.map((cm, i) => {
+    const [a, b] = cm.pair;
+    return `<button class="comm-pick" data-i="${i}">
+      <div class="comm-top">
+        <div class="comm-avs">
+          <span class="ca" style="color:${SUITS[a].color}"><svg viewBox="0 0 48 48" fill="none"><use href="${SUITS[a].glyph}"/></svg></span>
+          <span class="ca" style="color:${SUITS[b].color}"><svg viewBox="0 0 48 48" fill="none"><use href="${SUITS[b].glyph}"/></svg></span>
+        </div>
+        <span><div class="comm-title">${cm.title}</div><div class="comm-scene">${cm.scene}</div></span>
+      </div>
+      <div class="comm-perk">驻场:<span style="color:${SUITS[a].color}">${LEADS[a].name}</span> × <span style="color:${SUITS[b].color}">${LEADS[b].name}</span><br>
+      祝福:<span class="kw">两人花色 底分 +1/张</span> · <span class="kw">${cm.perk}</span></div>
+    </button>`;
+  }).join("");
+  openModal(`
+    <h2>第一张委托</h2>
+    <div class="sub">事务所急件 · 选择与谁同行(剩下两位下次再约)</div>
+    ${html}
+  `);
+  [...document.querySelectorAll(".comm-pick")].forEach(btn => {
+    btn.addEventListener("click", () => {
+      const cm = picks[+btn.dataset.i];
+      S.commission = cm;
+      S.version = 2; /* 解锁宫廷驰援(docs/04 §14.1) */
+      /* 委托偏向:驻场双主花色各混入 2 张(保留已有升阶/铭刻,不重建牌库) */
+      cm.pair.forEach(s => {
+        for (let i = 0; i < 2; i++) {
+          const r = 1 + Math.floor(Math.random() * 10);
+          S.runDeck.push({ suit: s, rank: r, id: `cm-${s}-${i}` });
+        }
+      });
+      if (cm.key === "bladeMercy") S.revives += 1;
+      closeModal();
+      startLayer();
+      const [la, lb] = cm.intro;
+      setTimeout(() => say(la[0], la[1], 0), 1100);
+      setTimeout(() => say(lb[0], lb[1]), 4300);
+    });
+  });
+}
+
+/* 首夜完结:双主完结对白 → 完遂卡(不计入硬核模式纪录) */
+async function storyVictory() {
+  const cm = S.commission;
+  const seq = cm ? cm.outro.map(([su, line]) => [su, line]) : [];
+  seq.push([null, "首夜记录完毕。事务所与裂隙处理室,从今夜起全面向您开放!"]);
+  await runStoryDialogue(seq);
+  try { localStorage.setItem("sv_story_done", "1"); } catch (e) {}
+  const doneStory = S.story; S.story = null; S.storyTip = null;
+  openModal(`
+    <svg class="title-octa" viewBox="0 0 48 48"><use href="#glyph-octa"/></svg>
+    <h2>✦ 首夜完遂 ✦</h2>
+    <div class="sub">裂隙,今夜安眠</div>
+    <p style="margin:10px 0 12px">五层星轨全数点亮。<br>暮星城的夜空,露出今夜第一片完整星河。</p>
+    <div class="stat-grid">
+      <div class="stat"><div class="v">${S.runScore}</div><div class="k">总共鸣</div></div>
+      <div class="stat"><div class="v">${S.bestPlay ? S.bestPlay.score : 0}</div><div class="k">最高单手</div></div>
+      <div class="stat"><div class="v">${S.relics.length}</div><div class="k">收集异象</div></div>
+      <div class="stat"><div class="v">${doneStory.retries || 0}</div><div class="k">重整次数</div></div>
+    </div>
+    <button class="btn-main" id="mFull">开 始 完 整 远 征(版本Ⅰ)</button>
+    <button class="btn-ghost" id="mTitle2">回标题</button>
+  `);
+  $("mFull").onclick = () => { closeModal(); showCommissionPick(1); };
+  $("mTitle2").onclick = () => { closeModal(); showTitle(); };
+}
+
 function showTitle() {
   openModal(`
     <svg class="title-octa" viewBox="0 0 48 48"><use href="#glyph-octa"/></svg>
     <h2>星轨裁决</h2>
     <div class="sub">STARLIGHT VERDICT · 内部演示 v0.5</div>
     <p style="margin:14px 0 10px">巨大的裂隙悬在暮星城上空。<br>选择本次远征的玩法深度:</p>
+    <button class="btn-main btn-story" id="v0">✦ 首夜 · 剧情版(新玩家从这里开始)${(() => { try { return localStorage.getItem("sv_story_done") ? `<span class="story-done-tag">已完遂</span>` : ""; } catch (e) { return ""; } })()}</button>
     <button class="btn-main" id="v1">Ⅰ · 剧情内简单版(首测推荐)${bestOf(1)}</button>
     <button class="btn-main btn-second" id="v2">Ⅱ · + 宫廷牌·男主驰援${bestOf(2)}</button>
     <button class="btn-main btn-second" id="v3">Ⅲ · + 牌铭刻与铭刻卷${bestOf(3)}</button>
@@ -2230,8 +2502,10 @@ function showTitle() {
     <button class="btn-ghost" id="tStart">先看教学(以版本Ⅰ开始)</button>
     <button class="btn-ghost" id="tAlbum" style="margin-top:8px">星轨手账(收集册)</button>
     <p class="dim" style="margin-top:12px">版本逐级叠加 · 对应 docs/04 §14 路线<br>数值未调优 · 男主反馈为文案演示</p>
+    <a class="btn-ghost" href="match/index.html" style="display:block;text-align:center;text-decoration:none;margin-top:8px">↔ 对决方案 M:星屑缝合(消除测试版)</a>
   `);
   const start = (v) => showCommissionPick(v);
+  $("v0").onclick = startStoryNight;
   $("v1").onclick = () => start(1);
   $("v2").onclick = () => start(2);
   $("v3").onclick = () => start(3);

@@ -1409,3 +1409,53 @@ body::before {
 .result-card .rc-big { font-family: var(--serif); font-size: 24px; color: #e9e4d6; letter-spacing: 0.18em; margin: 4px 0 5px; text-shadow: 0 0 16px rgba(216, 180, 106, 0.35); }
 .result-card .rc-stats { font-size: 11.5px; color: var(--ink-dim); letter-spacing: 0.06em; }
 .result-card .rc-quote { font-family: var(--serif); font-size: 13px; margin-top: 9px; line-height: 1.65; letter-spacing: 0.04em; }
+
+/* ========== v0.10 首夜切片(方案 J,docs/09 §3) ========== */
+/* 剧情对白层 */
+.sv-dlg {
+  position: fixed; inset: 0; z-index: 80;
+  background: linear-gradient(180deg, rgba(4, 6, 15, 0.25) 30%, rgba(4, 6, 15, 0.85));
+  display: flex; align-items: flex-end; justify-content: center;
+  cursor: pointer;
+}
+.sv-sheet {
+  width: min(96%, 500px); margin-bottom: max(18px, env(safe-area-inset-bottom));
+  display: flex; gap: 12px; padding: 16px 16px 14px;
+  border-radius: 16px; background: rgba(13, 18, 40, 0.97);
+  border: 1px solid var(--gold-dim);
+  box-shadow: 0 -4px 40px rgba(0, 0, 0, 0.6), 0 0 24px rgba(216, 180, 106, 0.08);
+  animation: svSheetUp 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+@keyframes svSheetUp { from { transform: translateY(24px); opacity: 0; } }
+.sv-ava {
+  width: 56px; height: 56px; border-radius: 14px; flex-shrink: 0;
+  border: 1.4px solid var(--gold-dim); background: rgba(20, 26, 54, 0.9);
+  display: flex; align-items: center; justify-content: center;
+}
+.sv-ava svg { width: 38px; height: 38px; stroke: currentColor; }
+.sv-body { flex: 1; min-width: 0; }
+.sv-name { font-family: var(--serif); font-size: 14px; letter-spacing: 3px; color: var(--gold); margin-bottom: 5px; }
+.sv-text { font-size: 14.5px; line-height: 1.75; color: var(--ink); min-height: 52px; }
+.sv-next { text-align: right; font-size: 10.5px; color: var(--ink-dim); margin-top: 6px; animation: svBlink 1.6s infinite; }
+@keyframes svBlink { 50% { opacity: 0.45; } }
+
+/* 逐张选牌飞分(全模式 juice) */
+.tap-fly {
+  position: fixed; z-index: 70; pointer-events: none;
+  font-family: var(--serif); font-weight: 700; font-size: 15px;
+  color: var(--gold-bright);
+  text-shadow: 0 0 10px rgba(243, 216, 150, 0.8), 0 1px 3px rgba(0, 0, 0, 0.8);
+  transition: transform 0.45s cubic-bezier(0.3, 0, 0.6, 1), opacity 0.18s 0.32s;
+}
+
+/* 首夜入口按钮 */
+.btn-story {
+  border-color: var(--gold) !important;
+  background: linear-gradient(160deg, #33285a 0%, #1a1438 100%) !important;
+  box-shadow: 0 0 18px rgba(216, 180, 106, 0.22);
+}
+.story-done-tag {
+  display: inline-block; margin-left: 8px; font-size: 10px;
+  color: var(--gold-bright); border: 1px solid var(--gold-dim);
+  border-radius: 999px; padding: 1px 8px; vertical-align: 2px;
+}

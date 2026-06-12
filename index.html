@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#070b1a">
 <title>星轨裁决 · 内部演示</title>
-<link rel="stylesheet" href="style.css?v=057">
+<link rel="stylesheet" href="style.css?v=058">
 </head>
 <body>
 <canvas id="starfield"></canvas>
@@ -148,11 +148,23 @@
   </footer>
 </div>
 
+<!-- ======= 首夜剧情对白层(方案 J 首夜切片,docs/09 §3) ======= -->
+<div class="sv-dlg" id="svDlg" style="display:none">
+  <div class="sv-sheet">
+    <div class="sv-ava" id="svAva"><svg viewBox="0 0 48 48" fill="none"><use id="svAvaGlyph" href="#glyph-sword"/></svg></div>
+    <div class="sv-body">
+      <div class="sv-name" id="svName">—</div>
+      <div class="sv-text" id="svText"></div>
+      <div class="sv-next">▼ 点击继续</div>
+    </div>
+  </div>
+</div>
+
 <!-- ======= 弹层 ======= -->
 <div class="overlay" id="overlay">
   <div class="modal" id="modal"></div>
 </div>
 
-<script src="game.js?v=057"></script>
+<script src="game.js?v=058"></script>
 </body>
 </html>

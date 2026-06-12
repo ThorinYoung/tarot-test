@@ -876,7 +876,9 @@ function pickCommission(options) {
           <div class="cc-name">${o.name}</div>
           <div class="cc-pair">${o.pair.map((s) => `<span style="color:${SUIT_META[s].color}">${LEADS[s].name}·${SUIT_META[s].name}</span>`).join(" × ")}</div>
           <div class="cc-desc">${o.desc}</div>
-        </div>`).join("")}`);
+        </div>`).join("")}
+      <button class="m-btn minor" id="mBackTitle">先回标题</button>`);
+    $("mBackTitle").onclick = () => { closeModal(); showTitle(); };
     $("modal").querySelectorAll(".comm-card").forEach((card) => {
       card.onclick = async () => {
         const o = options[Number(card.dataset.i)];

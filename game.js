@@ -2520,6 +2520,11 @@ $("btnSwap").addEventListener("click", onSwap);
 $("btnArcana").addEventListener("click", onArcana);
 $("btnAssist").addEventListener("click", onAssist);
 $("btnHelp").addEventListener("click", () => { if (!S.busy) showCodexModal(); });
+$("btnHome").addEventListener("click", () => {
+  if (S.busy) return;
+  S.story = null; S.storyTip = null;
+  showTitle();
+});
 $("btnGuide").addEventListener("click", () => { if (!S.busy) showGuideModal(); });
 $("btnSound").addEventListener("click", function () {
   this.classList.toggle("off", !sfx.toggle());

@@ -91,20 +91,20 @@ const COMMISSIONS = [
 /* 首夜剧情点 S1-S4(占位稿,终稿以编剧为准) */
 const STORY = [
   { id: "S1", name: "序章 · 电梯惊停", elevator: "alarm", goal: 40, guided: true,
-    tip: "点空格放下星屑 · 同样的聚 <b>3 枚相邻</b> 升一阶",
+    tip: "点空格放星屑 · <b>同色</b>的聚 3 枚相邻,合成升一阶",
     pre: [
       ["sys", "警告——无尽电梯检测到裂隙湍流,下行暂停。检测到星盘共鸣者:苏星轮。"],
-      ["sword", "别慌,看我手势。裂隙在往下坠星屑——那是被撕碎的星魂残片。"],
-      ["sword", "把同样的星屑,聚 3 枚连在一起,它们就会合成更亮的一阶。点空格,放下它。"],
-      ["sword", "金光标的格子,是此刻最好的落点。照着放,我看着你。"]],
+      ["sword", "别慌,看我手势。裂隙在往下坠星屑——那是被撕碎的星魂残片。这一夜,全是我的青色星屑。"],
+      ["sword", "把<同色>的星屑聚 3 枚连在一起,它们就合成更亮的一阶。颜色不同的,合不到一块儿。"],
+      ["sword", "金光标的格子是此刻最好的落点。点它,放下星屑——我看着你。"]],
     post: [
       ["sword", "……稳住了。第一次就有这种手感,比情报里写的更有趣。"],
       ["sword", "到了处理室,我教你怎么把它们一路点亮成『星座』。"]] },
   { id: "S2", name: "第一夜 · 处理室初开", elevator: "calm", goal: 70,
-    tip: "一路合成到最高阶 = <b>点亮星座</b>,自动升空缝合裂隙",
+    tip: "同色一路合到顶 = <b>点亮星座</b>,自动升空缝合裂隙",
     pre: [
-      ["sword", "这里是裂隙处理室。记住一件事——"],
-      ["sword", "星屑→星砾→星核→星辉,合到顶就是『星座』。星座一成形,就会自己升空,缝上一大段裂隙。"],
+      ["sword", "这里是裂隙处理室。这层起,会坠下不止一种颜色——别急,规则不变:只有<同色>的才合得起来。"],
+      ["sword", "星屑→星砾→星核,同色一路合到顶,就是『星座』。星座一成形,就自己升空,缝上一大段裂隙。"],
       ["sword", "左下『命运之轮』每层一次,卡住了就转一转,它欠你一手好的。"]],
     post: [["sword", "看吧,我就说你做得到。那道升空的星座,是谁的来着?"]] },
   { id: "S3", name: "第二夜 · 星象低语", elevator: "calm", goal: 110,
@@ -236,13 +236,20 @@ function at(r, c) { return inB(r, c) ? S.grid[r][c] : null; }
 function emptyCells() { const o = []; for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (!S.grid[r][c]) o.push({ r, c }); return o; }
 function mkTile(suit, tier) { return { id: ++tileSeq, suit, tier, r: 0, c: 0, el: null }; }
 
-function suitWeights() {
-  const w = {}; for (const s of SUIT_KEYS) w[s] = 1;
-  if (S.commission) for (const s of S.commission.pair) w[s] = 2.2;
-  if (hasLaw("strength")) w.wand += 1.2;
-  return w;
+/* 当前局的活跃花色(渐进引入:S1 单色教学 → S2/S3 双色 → 委托双主)。
+   控制有效色数,既符合"同色才合"的直觉,又避免四色同时养链塞死。 */
+function activeSuits() {
+  if (S.commission) return S.commission.pair;
+  if (S.story) return S.stageIdx === 0 ? ["sword"] : ["sword", "cup"];
+  return SUIT_KEYS.slice(0, 2);
 }
-function randSuit() { const w = suitWeights(); let tot = 0; for (const s of SUIT_KEYS) tot += w[s]; let r = Math.random() * tot; for (const s of SUIT_KEYS) { r -= w[s]; if (r <= 0) return s; } return "wand"; }
+function randSuit() {
+  const act = activeSuits();
+  const w = act.map(s => (hasLaw("strength") && s === "wand") ? 2 : 1);
+  let tot = w.reduce((a, b) => a + b, 0), r = Math.random() * tot;
+  for (let i = 0; i < act.length; i++) { r -= w[i]; if (r <= 0) return act[i]; }
+  return act[0];
+}
 function randTier() {
   let p1 = 0.14 - S.layer * 0.012;            /* 高层更少高阶坠落 */
   if (hasLaw("star")) p1 += 0.12;
@@ -290,16 +297,16 @@ function updateHud() {
   $("board").querySelectorAll(".cell-bg").forEach(bg => { const occ = at(+bg.dataset.r, +bg.dataset.c); bg.classList.toggle("hot", empt <= CRISIS_EMPTY && !occ); });
 }
 
-/* 连通簇(同阶,4 邻接) */
+/* 连通簇(同色 + 同阶,4 邻接)——只有同一花色同一阶的星屑才能合成 */
 function clusterAt(r, c) {
   const t0 = at(r, c); if (!t0) return [];
-  const tier = t0.tier, seen = new Set([r + "," + c]), stack = [{ r, c }], out = [{ r, c }];
+  const tier = t0.tier, suit = t0.suit, seen = new Set([r + "," + c]), stack = [{ r, c }], out = [{ r, c }];
   while (stack.length) {
     const { r: cr, c: cc } = stack.pop();
     for (const [dr, dc] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
       const nr = cr + dr, nc = cc + dc, k = nr + "," + nc;
       const t = at(nr, nc);
-      if (t && t.tier === tier && !seen.has(k)) { seen.add(k); stack.push({ r: nr, c: nc }); out.push({ r: nr, c: nc }); }
+      if (t && t.tier === tier && t.suit === suit && !seen.has(k)) { seen.add(k); stack.push({ r: nr, c: nc }); out.push({ r: nr, c: nc }); }
     }
   }
   return out;
@@ -489,7 +496,7 @@ function startLayer() {
   $("stage").classList.remove("sealed");
   $("btnArcana").classList.remove("used"); $("arcanaUses").textContent = S.wheelUses;
   $("layerName").textContent = layerName();
-  $("footTip").innerHTML = S.curTip || "同样的星屑聚 3 枚相邻,合成更高一阶";
+  $("footTip").innerHTML = S.curTip || "同色星屑聚 3 枚相邻,合成升一阶";
   preload(1, 39);
   /* 开局撒几枚,避免空盘冷启动 */
   const seedN = 8 + Math.min(5, S.layer);
@@ -670,11 +677,11 @@ function endlessSettle() {
 
 /* ===================== 图鉴 ===================== */
 function showCodex() {
-  const rows = TIERS.map((n, i) => `<tr><td class="cx-tier">${i + 1} 阶 · ${n}</td><td class="cx-desc">${i < TOP_TIER ? `${CLUSTER_MIN} 枚相邻 → 合成 ${i + 2} 阶` : "生成即升空,缝合一大段裂隙"}</td></tr>`).join("");
+  const rows = TIERS.map((n, i) => `<tr><td class="cx-tier">${i + 1} 阶 · ${n}</td><td class="cx-desc">${i < TOP_TIER ? `同色 ${CLUSTER_MIN} 枚相邻 → ${i + 2} 阶` : "生成即升空,缝合一大段裂隙"}</td></tr>`).join("");
   modal(`
-    <h2>玩法图鉴</h2><div class="m-sub">规则只看阶,不看花色;花色决定点亮谁的星座</div>
+    <h2>玩法图鉴</h2><div class="m-sub">同色同阶 3 枚相邻即合成 · 花色 = 男主</div>
     <table class="codex-table">${rows}</table>
-    <p class="m-text" style="font-size:12.5px">· 同阶星屑 <span class="kw">3 枚 4 邻接相连</span> 即合成升一阶,可连锁<br>· 合到顶阶「星座」<span class="kw">自动升空缝合</span>裂隙 + 唤回对应男主记忆<br>· 星盘塞满 = 过载,驻场男主托住救场<br>· 命运之轮每层一次:重排 / 拔擢 / 坍缩<br>· 过层选「星象法则」改写规则(roguelike)</p>
+    <p class="m-text" style="font-size:12.5px">· <span class="kw">同色同阶</span>星屑 3 枚 4 邻接相连 → 合成升一阶,可连锁<br>· 颜色不同 <span class="kw">合不到一块儿</span>;一种颜色 = 一位男主<br>· 同色合到顶阶「星座」<span class="kw">自动升空缝合</span>裂隙 + 唤回他的记忆<br>· 星盘塞满 = 过载,驻场男主托住救场<br>· 命运之轮每层一次:重排 / 拔擢 / 坍缩<br>· 过层选「星象法则」改写规则(roguelike)</p>
     <button class="m-btn" id="mClose">回到星盘</button>`);
   $("mClose").onclick = () => { if ($("app").style.display === "none") backToTitle(); else closeModal(); };
 }

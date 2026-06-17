@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#070b1a">
+<title>星沙 · 内部演示</title>
+<link rel="stylesheet" href="sand.css?v=001">
+</head>
+<body>
+<canvas id="starfield"></canvas>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="glyph-wand"><path d="M24 6 L24 40" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M24 6 C20 12 18 16 24 20 C30 16 28 12 24 6 Z" stroke-width="2" fill="currentColor" fill-opacity="0.35"/><path d="M17 13 C20 15 21 17 21 20 M31 13 C28 15 27 17 27 20" stroke-width="1.6" fill="none" stroke-linecap="round"/><circle cx="24" cy="40" r="2.6" fill="currentColor"/><path d="M19 35 L29 35" stroke-width="1.6" stroke-linecap="round"/></g>
+    <g id="glyph-coin"><circle cx="24" cy="24" r="16" stroke-width="2.4" fill="none"/><circle cx="24" cy="24" r="12.5" stroke-width="1" fill="none" opacity="0.6"/><path d="M24 13.5 L26.8 20.4 L34.2 20.9 L28.5 25.7 L30.3 32.9 L24 29 L17.7 32.9 L19.5 25.7 L13.8 20.9 L21.2 20.4 Z" stroke-width="1.6" stroke-linejoin="round" fill="currentColor" fill-opacity="0.3"/></g>
+    <g id="glyph-sword"><path d="M24 5 L27.5 12 L27.5 30 L24 34 L20.5 30 L20.5 12 Z" stroke-width="2" stroke-linejoin="round" fill="currentColor" fill-opacity="0.25"/><path d="M24 9 L24 31" stroke-width="1.2" opacity="0.8"/><path d="M15 33.5 L33 33.5" stroke-width="2.6" stroke-linecap="round"/><path d="M24 33.5 L24 41" stroke-width="2.4" stroke-linecap="round"/><circle cx="24" cy="42.5" r="2" fill="currentColor"/></g>
+    <g id="glyph-cup"><path d="M13 10 C13 22 18 26 24 26 C30 26 35 22 35 10 Z" stroke-width="2.2" stroke-linejoin="round" fill="currentColor" fill-opacity="0.25"/><path d="M24 26 L24 35 M16.5 39 C19 36.5 29 36.5 31.5 39" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M20 14 L21.5 17.2 L25 17.5 L22.4 19.8 L23.2 23 L20 21.2 L16.8 23 L17.6 19.8 L15 17.5 L18.5 17.2 Z" transform="translate(4 -2)" stroke-width="0" fill="currentColor" opacity="0.9"/></g>
+    <g id="glyph-wheel"><circle cx="24" cy="24" r="17" stroke-width="2.4" fill="none"/><circle cx="24" cy="24" r="10" stroke-width="1.4" fill="none" opacity="0.8"/><circle cx="24" cy="24" r="3" fill="currentColor"/><path d="M24 7 L24 14 M24 34 L24 41 M7 24 L14 24 M34 24 L41 24 M12 12 L17 17 M31 31 L36 36 M36 12 L31 17 M17 31 L12 36" stroke-width="1.8" stroke-linecap="round"/></g>
+    <g id="glyph-octa"><path d="M24 4 L27 21 L44 24 L27 27 L24 44 L21 27 L4 24 L21 21 Z" fill="currentColor"/></g>
+  </defs>
+</svg>
+
+<!-- 标题页 -->
+<div class="title-screen" id="titleScreen">
+  <div class="ts-inner">
+    <div class="ts-deco">✦ ✧ ✦</div>
+    <h1 class="ts-title">星 沙</h1>
+    <div class="ts-sub">STELLAR SANDS · 内部演示 v0.1</div>
+    <div class="ts-lore">裂隙把他的星魂磨成了星沙,倾泻而下。<br>让同色的星沙汇成一片,<br>点散它——溃成星光,缝住裂隙。</div>
+    <div class="ts-btns">
+      <button class="ts-btn primary" id="btnStory">✦ 首夜 · 剧情远征</button>
+      <button class="ts-btn" id="btnEndless" disabled>无尽夜(完成首夜解锁)</button>
+      <button class="ts-btn ghost" id="btnHelp2">玩法图鉴</button>
+      <button class="ts-btn ghost" id="btnReset">重置进度</button>
+    </div>
+    <div class="ts-note">内部验证原型 · 立绘/语音为占位 ⚠️ 等资产到位再换<br>
+      <a href="../index.html">星轨裁决(卡牌)</a> · <a href="../merge/index.html">缀星(合成)</a></div>
+  </div>
+</div>
+
+<!-- 电梯过场 -->
+<div class="elevator" id="elevator" style="display:none">
+  <div class="ev-shaft"><div class="ev-lines"></div></div>
+  <div class="ev-text" id="evText">无尽电梯 · 下行中…</div>
+</div>
+
+<!-- 主应用 -->
+<div class="app" id="app" style="display:none">
+  <header class="hud">
+    <div class="hud-row">
+      <div class="rift-label"><span class="rift-deco">✦</span><span id="layerName">—</span></div>
+      <div class="hud-icons">
+        <span class="dust-hud" id="dustHud" title="星屑">✦ 0</span>
+        <button class="icon-btn" id="btnHelp" title="玩法图鉴">式</button>
+        <button class="icon-btn" id="btnSound" title="音效">♪</button>
+        <button class="icon-btn" id="btnHome" title="回标题">⌂</button>
+      </div>
+    </div>
+    <div class="goal-row">
+      <div class="goal-bar"><div class="goal-fill" id="goalFill"></div></div>
+      <div class="goal-num"><b id="seamNow">0</b>/<span id="seamGoal">0</span></div>
+    </div>
+    <div class="relic-row" id="relicRow"></div>
+  </header>
+
+  <div class="lead-bar" id="leadBar">
+    <div class="lead-avatar" id="leadAvatar"><svg viewBox="0 0 48 48" fill="none"><use id="leadGlyph" href="#glyph-sword"/></svg></div>
+    <div class="lead-bubble"><div class="lb-name" id="lbName">—</div><div class="lb-text" id="lbText">…</div></div>
+  </div>
+
+  <!-- 星沙容器 -->
+  <div class="sand-zone" id="sandZone">
+    <canvas id="sandCanvas"></canvas>
+    <div class="combo-banner" id="comboBanner"></div>
+  </div>
+
+  <div class="hint-line" id="hintLine">点击同色的一片星沙,把它点散</div>
+
+  <footer class="actions-row">
+    <button class="arcana-slot" id="btnArcana" title="命运之轮">
+      <svg viewBox="0 0 48 48"><use href="#glyph-wheel"/></svg>
+      <span class="arcana-uses" id="arcanaUses">1</span>
+    </button>
+    <div class="foot-tip" id="footTip">同色星沙连成一片,点它溃散</div>
+  </footer>
+</div>
+
+<!-- 对白层 -->
+<div class="dlg-layer" id="dlgLayer" style="display:none">
+  <div class="dlg-sheet">
+    <div class="dlg-avatar" id="dlgAvatar"><svg viewBox="0 0 48 48" fill="none"><use id="dlgGlyph" href="#glyph-sword"/></svg></div>
+    <div class="dlg-body"><div class="dlg-name" id="dlgName">—</div><div class="dlg-text" id="dlgText"></div><div class="dlg-next">▼ 点击继续</div></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="sand.js?v=001"></script>
+</body>
+</html>

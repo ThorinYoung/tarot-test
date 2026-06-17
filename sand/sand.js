@@ -8,11 +8,12 @@
 "use strict";
 
 /* ===================== 配置 ===================== */
+/* 四花色高对比:红/黄/绿/蓝色相分明(原青/蓝太接近,沙里糊成一片) */
 const SUITS = {
-  wand:  { name: "权杖", color: "#ff6b4a", rgb: [255, 107, 74], glyph: "#glyph-wand" },
-  coin:  { name: "星币", color: "#f0c75e", rgb: [240, 199, 94], glyph: "#glyph-coin" },
-  sword: { name: "宝剑", color: "#7fd6c2", rgb: [127, 214, 194], glyph: "#glyph-sword" },
-  cup:   { name: "圣杯", color: "#6f9bff", rgb: [111, 155, 255], glyph: "#glyph-cup" },
+  wand:  { name: "权杖", color: "#ff4d2e", rgb: [255, 77, 46], glyph: "#glyph-wand" },   /* 火红 */
+  coin:  { name: "星币", color: "#ffd21f", rgb: [255, 210, 31], glyph: "#glyph-coin" },  /* 金黄 */
+  sword: { name: "宝剑", color: "#15d683", rgb: [21, 214, 131], glyph: "#glyph-sword" }, /* 翡翠绿(强拉离蓝) */
+  cup:   { name: "圣杯", color: "#4a7bff", rgb: [74, 123, 255], glyph: "#glyph-cup" },   /* 宝蓝 */
 };
 const SUIT_KEYS = ["wand", "coin", "sword", "cup"];
 const SUIT_IDX = { wand: 1, coin: 2, sword: 3, cup: 4 };
@@ -81,13 +82,13 @@ const STORY = [
 ];
 
 /* ===================== 数值 ===================== */
-const GW = 34, GH = 48;       /* 细颗粒网格(~1600 粒),堆出真正的"沙"质感 */
-const CLEAR_MIN = 18;         /* 同色连通 ≥ 此值可溃散(细沙下一片有几十粒) */
-const PORTS = [8, 17, 26];    /* 倾泻口:沙从几个口倒下堆成山(同色更易在山体连片) */
-const BIG_CLEAR = 60;         /* 大片溃散("点亮") */
-const PHYS_MS = 24;           /* 沙子物理步长(细格下落更顺) */
+const GW = 44, GH = 62;       /* 更细颗粒网格(~2700 粒),真正的"沙"质感 */
+const CLEAR_MIN = 6;          /* 同色连通 ≥ 此值即可溃散(点一小撮就消,即时反馈) */
+const PORTS = [10, 22, 34];   /* 倾泻口:沙从几个口倒下堆成山(同色更易在山体连片) */
+const BIG_CLEAR = 28;         /* 大片溃散("点亮") */
+const PHYS_MS = 22;           /* 沙子物理步长(细格下落更顺) */
 const COMBO_WIN = 2400;       /* 连击窗口 ms */
-const WARN_ROW = 5;           /* 警戒线行 */
+const WARN_ROW = 6;           /* 警戒线行 */
 const OVERLOAD_MS = 3000;     /* 顶部持续堵塞达此时长 → 过载 */
 const endlessGoal = (n) => Math.round((120 * Math.pow(1.3, n - 1)) / 5) * 5;
 /* 沙子持续涌入(制造"消不停"流动感 + 满屏细沙山);层越深涌入越快 */
@@ -182,10 +183,11 @@ let riftImg = null;
 function riftProgress(p) { const idx = 1 + Math.round(Math.max(0, Math.min(1, p)) * 38); if (!riftImg) riftImg = new Image(); riftImg.src = FRAME(idx); }
 
 /* ===================== 花色权重 ===================== */
+/* 渐进引入颜色,且同局两色对比强(避免相近色难辨) */
 function activeSuits() {
   if (S.commission) return S.commission.pair;
-  if (S.story) return S.stageIdx === 0 ? ["sword"] : ["sword", "cup"];
-  return SUIT_KEYS.slice(0, 2);
+  if (S.story) return S.stageIdx === 0 ? ["sword"] : S.stageIdx === 1 ? ["sword", "coin"] : ["wand", "cup"];
+  return ["wand", "cup"];
 }
 function hasLaw(k) { return S.laws.some(l => l.key === k); }
 function randSuitIdx() {
@@ -235,7 +237,7 @@ function spawnGrains() {
     if (Math.random() < 0.10) S.portSuit[i] = randSuitIdx();   /* 偶尔换色 → 山体分块同色 */
     for (let w = 0; w <= wide; w++) {
       const c = Math.max(0, Math.min(GW - 1, PORTS[i] + (Math.floor(Math.random() * 3) - 1)));
-      if (S.grid[idx(0, c)] === 0) { S.grid[idx(0, c)] = S.portSuit[i]; S.shade[idx(0, c)] = 0.72 + Math.random() * 0.46; }
+      if (S.grid[idx(0, c)] === 0) { S.grid[idx(0, c)] = S.portSuit[i]; S.shade[idx(0, c)] = 0.9 + Math.random() * 0.14; }
     }
   }
 }
@@ -400,8 +402,8 @@ function startLayer() {
   for (let r = GH - seedRows; r < GH; r++) {
     let c = 0;
     while (c < GW) {
-      const v = randSuitIdx(), run = 8 + Math.floor(Math.random() * 14);  /* 一段同色 8-21 格,大片 */
-      for (let k = 0; k < run && c < GW; k++, c++) if (Math.random() < 0.88) { S.grid[idx(r, c)] = v; S.shade[idx(r, c)] = 0.72 + Math.random() * 0.46; }
+      const v = randSuitIdx(), run = 12 + Math.floor(Math.random() * 22);  /* 一段同色 12-33 格,大片 */
+      for (let k = 0; k < run && c < GW; k++, c++) if (Math.random() < 0.9) { S.grid[idx(r, c)] = v; S.shade[idx(r, c)] = 0.9 + Math.random() * 0.14; }
     }
   }
   const dl = dutyLead(); setLeadBar(dl); setTimeout(() => say(dl, "start", true), 700);

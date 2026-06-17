@@ -51,7 +51,7 @@ const COMMISSIONS = [
 ];
 
 const STORY = [
-  { id: "S1", name: "序章 · 电梯惊停", elevator: "alarm", goal: 90, guided: true,
+  { id: "S1", name: "序章 · 电梯惊停", elevator: "alarm", goal: 120, guided: true,
     tip: "点<同色>连成的一片星沙,把它点散",
     pre: [
       ["sys", "警告——无尽电梯检测到裂隙湍流,下行暂停。检测到星盘共鸣者:苏星轮。"],
@@ -59,21 +59,21 @@ const STORY = [
       ["sword", "同色的沙会自己堆、自己滑。等它连成一片,点它,就溃成星光,缝住裂隙。"],
       ["sword", "连得越大,缝得越多。来,点点看——我看着你。"]],
     post: [["sword", "……稳住了。手感不错,比情报里写的有趣。"], ["sword", "到了处理室,我教你怎么连着点、点不停。"]] },
-  { id: "S2", name: "第一夜 · 处理室初开", elevator: "calm", goal: 150,
+  { id: "S2", name: "第一夜 · 处理室初开", elevator: "calm", goal: 210,
     tip: "连着点不停 → <b>连击</b>,缝合越来越快",
     pre: [
       ["sword", "这层起会落下别的颜色——记住,只点<同色>连成的一片。"],
       ["sword", "诀窍是『消不停』:点散一片,上面的沙会塌下来,又连成新的一片,连着点,缝合翻倍。"],
       ["sword", "卡住了就用左下『命运之轮』,它欠你一手好的。"]],
     post: [["sword", "看吧,连击一起,根本停不下来。"]] },
-  { id: "S3", name: "第二夜 · 星象低语", elevator: "calm", goal: 240,
+  { id: "S3", name: "第二夜 · 星象低语", elevator: "calm", goal: 330,
     tip: "溃散谁的颜色,就唤回谁的一段记忆",
     pre: [
       ["cup", "听,星核穹顶在响。每溃散一大片他的星沙,就唤回他的一段记忆。"],
       ["cup", "过层时能选一枚『星象法则』,大阿卡纳的碎片,会改写规则。"],
       ["cup", "选你喜欢的,它陪着你。"]],
     post: [["cup", "嗯,这一片,很温柔,也很正确。"]] },
-  { id: "S4", name: "第三夜 · 双人委托", elevator: "calm", goal: 340,
+  { id: "S4", name: "第三夜 · 双人委托", elevator: "calm", goal: 470,
     tip: "驻场双主的花色星沙坠落更频繁",
     commission: ["cold", "tide"],
     pre: [["sys", "叮——事务所第一张正式委托抵达!裂隙强度上升,两位先生同时驻场。"], ["sys", "请选择本次委托的搭档组合。"]],
@@ -81,18 +81,18 @@ const STORY = [
 ];
 
 /* ===================== 数值 ===================== */
-const GW = 18, GH = 26;       /* 细颗粒网格,堆出"沙"的质感 */
-const CLEAR_MIN = 8;          /* 同色连通 ≥ 此值可溃散(细格下连片粒数更多) */
-const PORTS = [4, 9, 14];     /* 倾泻口:沙从几个口倒下堆成山(同色更易在山体连片) */
-const BIG_CLEAR = 26;         /* 大片溃散("点亮") */
-const PHYS_MS = 38;           /* 沙子物理步长 */
+const GW = 34, GH = 48;       /* 细颗粒网格(~1600 粒),堆出真正的"沙"质感 */
+const CLEAR_MIN = 18;         /* 同色连通 ≥ 此值可溃散(细沙下一片有几十粒) */
+const PORTS = [8, 17, 26];    /* 倾泻口:沙从几个口倒下堆成山(同色更易在山体连片) */
+const BIG_CLEAR = 60;         /* 大片溃散("点亮") */
+const PHYS_MS = 24;           /* 沙子物理步长(细格下落更顺) */
 const COMBO_WIN = 2400;       /* 连击窗口 ms */
-const WARN_ROW = 3;           /* 警戒线行 */
+const WARN_ROW = 5;           /* 警戒线行 */
 const OVERLOAD_MS = 3000;     /* 顶部持续堵塞达此时长 → 过载 */
-const endlessGoal = (n) => Math.round((90 * Math.pow(1.3, n - 1)) / 5) * 5;
-/* 沙子持续涌入(制造"消不停"流动感 + 满屏沙山);层越深涌入越快 */
-const spawnInterval = () => Math.max(210, 380 - S.layer * 28);
-const grainsPerSpawn = () => 9 + S.layer;   /* 每波同色一小堆,堆成山 */
+const endlessGoal = (n) => Math.round((120 * Math.pow(1.3, n - 1)) / 5) * 5;
+/* 沙子持续涌入(制造"消不停"流动感 + 满屏细沙山);层越深涌入越快 */
+/* 高频从倾泻口滴沙(每口一根同色柱,塌成同色堆;不铺行,避免悬空横带) */
+const spawnInterval = () => Math.max(55, 130 - S.layer * 9);
 
 /* ===================== 状态 ===================== */
 const S = {
@@ -102,7 +102,7 @@ const S = {
   laws: [], commission: null, wheelUses: 1,
   running: false, paused: true, guided: false, story: false,
   combo: 0, comboT: 0, overloadT: 0, ascendThisLayer: 0, rescues: 1,
-  seamTotal: 0, maxCombo: 0, litLeads: {}, dust: 0, curTip: "",
+  seamTotal: 0, maxCombo: 0, litLeads: {}, dust: 0, curTip: "", portSuit: [],
   sound: load("xs_sound", true),
 };
 let cv, cx, cssW = 0, cssH = 0, cellPx = 0, dpr = 1;
@@ -228,20 +228,15 @@ function physicsStep() {
     }
   }
 }
-/* 每波倒同色一小块、波间换色(像截图:同色成块层叠,既能连片又不会一坨秒过) */
+/* 每个倾泻口持续滴下同色沙柱(偶尔换色),靠物理塌成同色堆;顶格满则跳过(堵塞=过载来源) */
 function spawnGrains() {
-  const n = grainsPerSpawn();
-  const port = PORTS[Math.floor(Math.random() * PORTS.length)];
-  const v = randSuitIdx();                 /* 本波同色一小块 */
-  for (let k = 0; k < n; k++) {
-    let c = Math.max(0, Math.min(GW - 1, port + (Math.floor(Math.random() * 3) - 1)));
-    if (S.grid[idx(0, c)] !== 0) {         /* 该口顶满 → 就近找空列 */
-      let found = -1;
-      for (let dc = 0; dc < GW; dc++) { const cc = (c + dc) % GW; if (S.grid[idx(0, cc)] === 0) { found = cc; break; } }
-      if (found < 0) continue;             /* 顶满 = 堵塞 */
-      c = found;
+  const wide = 1 + Math.floor(S.layer / 3);     /* 层越深口越粗,涌入更猛 */
+  for (let i = 0; i < PORTS.length; i++) {
+    if (Math.random() < 0.10) S.portSuit[i] = randSuitIdx();   /* 偶尔换色 → 山体分块同色 */
+    for (let w = 0; w <= wide; w++) {
+      const c = Math.max(0, Math.min(GW - 1, PORTS[i] + (Math.floor(Math.random() * 3) - 1)));
+      if (S.grid[idx(0, c)] === 0) { S.grid[idx(0, c)] = S.portSuit[i]; S.shade[idx(0, c)] = 0.72 + Math.random() * 0.46; }
     }
-    S.grid[idx(0, c)] = v; S.shade[idx(0, c)] = 0.8 + Math.random() * 0.4;
   }
 }
 
@@ -253,13 +248,13 @@ function render() {
   const wy = WARN_ROW * cellPx;
   cx.strokeStyle = "rgba(255,91,110,0.55)"; cx.lineWidth = Math.max(1.5, dpr);
   cx.setLineDash([8 * dpr, 6 * dpr]); cx.beginPath(); cx.moveTo(0, wy); cx.lineTo(cv.width, wy); cx.stroke(); cx.setLineDash([]);
-  /* 沙粒 */
-  const g = S.grid, gap = Math.max(0.5, cellPx * 0.06);
+  /* 沙粒:无缝实心填充 + 每粒明暗噪声 → 细沙质感(轻微 overdraw 消除亚像素缝) */
+  const g = S.grid, w = cellPx + 0.7;
   for (let r = 0; r < GH; r++) for (let c = 0; c < GW; c++) {
     const v = g[idx(r, c)]; if (!v) continue;
     const rgb = SUITS[IDX_SUIT[v]].rgb, sh = S.shade[idx(r, c)] || 1;
-    cx.fillStyle = `rgb(${rgb[0] * sh | 0},${rgb[1] * sh | 0},${rgb[2] * sh | 0})`;
-    cx.fillRect(c * cellPx + gap, r * cellPx + gap, cellPx - gap * 2, cellPx - gap * 2);
+    cx.fillStyle = `rgb(${Math.min(255, rgb[0] * sh) | 0},${Math.min(255, rgb[1] * sh) | 0},${Math.min(255, rgb[2] * sh) | 0})`;
+    cx.fillRect(c * cellPx, r * cellPx, w, w);
   }
 }
 
@@ -297,8 +292,8 @@ function doClear(cluster, suit) {
   S.maxCombo = Math.max(S.maxCombo, S.combo);
   const isBig = size >= BIG_CLEAR;
   /* 计分 */
-  let base = size + Math.max(0, size - 8) * 0.6;
-  if (isBig) base += 30;
+  let base = size * 0.5 + Math.max(0, size - CLEAR_MIN) * 0.25;
+  if (isBig) base += 24;
   if (hasLaw("sun")) base += 6;
   if (hasLaw("star") && isBig) base += 20;
   if (hasLaw("lovers") && suit === "cup") base *= 1.5;
@@ -392,6 +387,7 @@ function doWheel(kind) {
 /* ===================== 关卡流 ===================== */
 function startLayer() {
   S.grid.fill(0); S.seam = 0; S.ascendThisLayer = 0; S.combo = 0; S.comboT = 0; S.overloadT = 0; S.eyeNext = false;
+  S.portSuit = PORTS.map(() => randSuitIdx());
   S.wheelUses = 1 + (hasLaw("wheel") ? 1 : 0);
   $("btnArcana").classList.remove("used"); $("arcanaUses").textContent = S.wheelUses; $("btnArcana").classList.add("ready");
   $("layerName").textContent = layerName();
@@ -399,13 +395,13 @@ function startLayer() {
   $("hintLine").innerHTML = S.curTip || "点同色连成的一片星沙,把它点散";
   cv.classList.remove("crisis");
   layoutCanvas(); preload(1, 39); updateHud(); renderRelics();
-  /* 开局铺成丰满"沙山"(成片同色块,而非零散),让一进场就是满屏沙 */
-  const seedRows = Math.floor(GH * 0.42) + Math.min(4, S.layer);
+  /* 开局铺成丰满"细沙山"(大段同色成片);细格下铺到约一半高,一进场就满屏沙 */
+  const seedRows = Math.floor(GH * 0.46) + Math.min(6, S.layer);
   for (let r = GH - seedRows; r < GH; r++) {
     let c = 0;
     while (c < GW) {
-      const v = randSuitIdx(), run = 3 + Math.floor(Math.random() * 5);  /* 一段同色 3-7 格,成片 */
-      for (let k = 0; k < run && c < GW; k++, c++) if (Math.random() < 0.82) { S.grid[idx(r, c)] = v; S.shade[idx(r, c)] = 0.8 + Math.random() * 0.4; }
+      const v = randSuitIdx(), run = 8 + Math.floor(Math.random() * 14);  /* 一段同色 8-21 格,大片 */
+      for (let k = 0; k < run && c < GW; k++, c++) if (Math.random() < 0.88) { S.grid[idx(r, c)] = v; S.shade[idx(r, c)] = 0.72 + Math.random() * 0.46; }
     }
   }
   const dl = dutyLead(); setLeadBar(dl); setTimeout(() => say(dl, "start", true), 700);

@@ -54,7 +54,7 @@ const STORY = [
     tip: "点屏幕 → 这团星沙就从那儿<b>倒下</b>;同色凑一片自动溃散",
     pre: [
       ["sys", "警告——无尽电梯检测到裂隙湍流,下行暂停。检测到星盘共鸣者:苏星轮。"],
-      ["sword", "别慌。裂隙把星魂磨成了沙,攥在你手里——这一夜,全是我的青沙。"],
+      ["sword", "别慌。裂隙把星魂磨成了沙,攥在你手里——青的、红的,先认这两色。"],
       ["sword", "点星盘任意位置,这团沙就从那儿倒下、像水一样淌开堆积。"],
       ["sword", "同色的沙堆够一片,它会<自己>溃散成星光,缝住裂隙。往一处倒,凑大片。我看着你。"]],
     post: [["sword", "……稳住了。手感不错,比情报里写的有趣。"], ["sword", "到了处理室,我教你怎么连着倒、溃不停。"]] },
@@ -183,15 +183,16 @@ function runDialogue(seq) {
 }
 
 /* ===================== 花色 / 沙团 ===================== */
+/* 颜色丰富:S1 双色教学 → S2 三色 → S3+/委托/无尽 四色全开(委托主色加权,但四色都在) */
 function activeSuits() {
-  if (S.commission) return S.commission.pair;
-  if (S.story) return S.stageIdx === 0 ? ["sword"] : S.stageIdx === 1 ? ["sword", "coin"] : ["wand", "cup"];
-  return ["wand", "cup"];
+  if (S.commission) return SUIT_KEYS;
+  if (S.story) return S.stageIdx === 0 ? ["sword", "wand"] : S.stageIdx === 1 ? ["sword", "wand", "coin"] : SUIT_KEYS;
+  return SUIT_KEYS;
 }
 function hasLaw(k) { return S.laws.some(l => l.key === k); }
 function randSuitIdx() {
   const act = activeSuits();
-  const w = act.map(s => (hasLaw("strength") && s === "wand") ? 2 : 1);
+  const w = act.map(s => (hasLaw("strength") && s === "wand") ? 2.4 : (S.commission && S.commission.pair.includes(s) ? 1.8 : 1));
   let tot = w.reduce((a, b) => a + b, 0), r = Math.random() * tot;
   for (let i = 0; i < act.length; i++) { r -= w[i]; if (r <= 0) return SUIT_IDX[act[i]]; }
   return SUIT_IDX[act[0]];
@@ -400,9 +401,7 @@ function startLayer() {
   $("hintLine").innerHTML = S.curTip || "点屏幕,把这团星沙倒下去";
   cv.classList.remove("crisis");
   layoutCanvas(); preload(1, 39); updateHud(); renderRelics(); renderBlobUI();
-  /* 开局薄底:垫几行沙,玩家有的凑起步 */
-  const seedRows = Math.floor(GH * 0.1);
-  for (let r = GH - seedRows; r < GH; r++) { let c = 0; while (c < GW) { const v = randSuitIdx(), run = 14 + Math.floor(Math.random() * 28); for (let k = 0; k < run && c < GW; k++, c++) if (Math.random() < 0.9) { S.grid[idx(r, c)] = v; S.shade[idx(r, c)] = 0.9 + Math.random() * 0.14; } } }
+  /* 开局空盘:玩家主动投放才有沙。绝不预铺大片同色(否则会被自动溃散秒消→开局直接过关) */
   const dl = dutyLead(); setLeadBar(dl); setTimeout(() => say(dl, "start", true), 700);
   startLoop(); S.paused = false;
 }

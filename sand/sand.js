@@ -319,19 +319,36 @@ function leadInnerVoice(suit) {
   setTimeout(() => toast("✦ 灵宝:" + lines[suit], 3000), 600);
 }
 
-/* ===================== 渲染 ===================== */
+/* ===================== 渲染:发光星沙精灵(预渲染,亮心+高光,晶莹质感) ===================== */
+const SPRITES = {};
+function makeSprites() {
+  const SZ = 28;
+  for (const k of SUIT_KEYS) {
+    const [r, g, b] = SUITS[k].rgb;
+    const oc = document.createElement("canvas"); oc.width = SZ; oc.height = SZ;
+    const o = oc.getContext("2d");
+    const grad = o.createRadialGradient(SZ * 0.38, SZ * 0.34, SZ * 0.05, SZ * 0.5, SZ * 0.5, SZ * 0.62);
+    grad.addColorStop(0, `rgb(${Math.min(255, r + 120)},${Math.min(255, g + 120)},${Math.min(255, b + 120)})`);   /* 亮心 */
+    grad.addColorStop(0.42, `rgb(${r},${g},${b})`);
+    grad.addColorStop(1, `rgb(${r * 0.48 | 0},${g * 0.48 | 0},${b * 0.48 | 0})`);                                   /* 暗边 */
+    o.fillStyle = grad;
+    if (o.roundRect) { o.beginPath(); o.roundRect(1.5, 1.5, SZ - 3, SZ - 3, SZ * 0.32); o.fill(); }
+    else { o.fillRect(1.5, 1.5, SZ - 3, SZ - 3); }
+    o.fillStyle = "rgba(255,255,255,0.6)";                                                                          /* 高光点 */
+    o.beginPath(); o.arc(SZ * 0.34, SZ * 0.3, SZ * 0.12, 0, 7); o.fill();
+    SPRITES[SUIT_IDX[k]] = oc;
+  }
+}
 function render() {
   if (!cx) return;
   cx.clearRect(0, 0, cv.width, cv.height);
   const wy = WARN_ROW * cellPx;
   cx.strokeStyle = "rgba(255,91,110,0.5)"; cx.lineWidth = Math.max(1.5, dpr); cx.setLineDash([8 * dpr, 6 * dpr]);
   cx.beginPath(); cx.moveTo(0, wy); cx.lineTo(cv.width, wy); cx.stroke(); cx.setLineDash([]);
-  const g = S.grid, w = cellPx + 0.8;
+  const g = S.grid, w = cellPx + 1.3;
   for (let r = 0; r < GH; r++) for (let c = 0; c < GW; c++) {
     const v = g[idx(r, c)]; if (!v) continue;
-    const rgb = SUITS[IDX_SUIT[v]].rgb, sh = S.shade[idx(r, c)] || 1;
-    cx.fillStyle = `rgb(${Math.min(255, rgb[0] * sh) | 0},${Math.min(255, rgb[1] * sh) | 0},${Math.min(255, rgb[2] * sh) | 0})`;
-    cx.fillRect(c * cellPx, r * cellPx, w, w);
+    const sp = SPRITES[v]; if (sp) cx.drawImage(sp, c * cellPx - 0.4, r * cellPx - 0.4, w, w);
   }
 }
 
@@ -573,4 +590,4 @@ function bindUI() {
 }
 
 /* ===================== 启动 ===================== */
-layoutCanvas(); bindUI(); showTitle();
+makeSprites(); layoutCanvas(); bindUI(); showTitle();

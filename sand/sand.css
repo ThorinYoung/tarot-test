@@ -97,15 +97,15 @@ body { background:var(--bg-deep) url("../assets/bg-deepfield.jpg") center/cover 
 .arcana-slot.used { opacity:0.4; }
 .arcana-uses { position:absolute; top:-5px; right:-5px; background:var(--gold); color:#161232; font-size:11px; font-weight:700; border-radius:999px; min-width:17px; height:17px; line-height:17px; text-align:center; }
 .foot-tip { flex:1; text-align:right; font-size:11px; color:var(--ink-dim); letter-spacing:0.3px; }
-/* 手中沙团显示 */
-.next-rail { display:flex; align-items:center; gap:5px; flex-shrink:0; }
-.next-label { font-family:var(--serif); font-size:10px; color:var(--gold); letter-spacing:1px; }
-.next-label.dim { color:var(--ink-dim); }
-.blob-slot { width:42px; height:42px; border-radius:999px; border:1.5px solid var(--gold-dim); background:rgba(13,18,40,0.6); display:flex; align-items:center; justify-content:center; }
-.blob-slot.small { width:30px; height:30px; opacity:0.7; }
-.blob-chip { width:100%; height:100%; border-radius:999px; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at 40% 35%, color-mix(in srgb, var(--bc) 60%, transparent), color-mix(in srgb, var(--bc) 16%, transparent)); border:1.5px solid var(--bc); box-shadow:0 0 10px -2px var(--bc); animation:blobPulse 1.8s ease-in-out infinite; }
-.blob-chip svg { width:60%; height:60%; stroke:currentColor; fill:none; color:#fff; opacity:0.92; }
-@keyframes blobPulse { 50% { box-shadow:0 0 16px 0 var(--bc); } }
+/* 手中沙团:悬在 canvas 顶部红线上方,准备倒下 */
+.blob-dock { position:absolute; top:6px; left:50%; transform:translateX(-50%); z-index:6; display:flex; align-items:center; gap:6px; pointer-events:none; }
+.sand-zone { position:relative; }
+.blob-arrow { color:var(--gold); font-size:14px; opacity:0.8; animation:blobPulse 1.6s ease-in-out infinite; }
+.blob-slot { width:40px; height:40px; border-radius:999px; border:1.5px solid var(--gold-dim); background:rgba(13,18,40,0.55); display:flex; align-items:center; justify-content:center; }
+.blob-slot.small { width:28px; height:28px; opacity:0.7; }
+.blob-chip { width:100%; height:100%; border-radius:999px; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at 40% 35%, color-mix(in srgb, var(--bc) 65%, transparent), color-mix(in srgb, var(--bc) 18%, transparent)); border:1.5px solid var(--bc); box-shadow:0 0 12px -2px var(--bc); animation:blobPulse 1.8s ease-in-out infinite; }
+.blob-chip svg { width:60%; height:60%; stroke:currentColor; fill:none; color:#fff; opacity:0.95; }
+@keyframes blobPulse { 50% { box-shadow:0 0 18px 0 var(--bc); opacity:0.85; } }
 
 /* 对白层 */
 .dlg-layer { position:fixed; inset:0; z-index:70; background:linear-gradient(180deg,rgba(4,6,15,0.25) 30%,rgba(4,6,15,0.85)); display:flex; align-items:flex-end; justify-content:center; cursor:pointer; }

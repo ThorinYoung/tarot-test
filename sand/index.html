@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#070b1a">
 <title>星沙 · 内部演示</title>
-<link rel="stylesheet" href="sand.css?v=007">
+<link rel="stylesheet" href="sand.css?v=009">
 </head>
 <body>
 <canvas id="starfield"></canvas>
@@ -72,6 +72,12 @@
   <!-- 星沙容器 -->
   <div class="sand-zone" id="sandZone">
     <canvas id="sandCanvas"></canvas>
+    <!-- 手中沙团:悬在红线上方,准备倒下 -->
+    <div class="blob-dock" id="blobDock">
+      <div class="blob-slot" id="blobCur"></div>
+      <span class="blob-arrow">▾</span>
+      <div class="blob-slot small" id="blobNext"></div>
+    </div>
     <div class="combo-banner" id="comboBanner"></div>
   </div>
 
@@ -82,12 +88,6 @@
       <svg viewBox="0 0 48 48"><use href="#glyph-wheel"/></svg>
       <span class="arcana-uses" id="arcanaUses">1</span>
     </button>
-    <div class="next-rail">
-      <span class="next-label">手中</span>
-      <div class="blob-slot" id="blobCur"></div>
-      <span class="next-label dim">下一</span>
-      <div class="blob-slot small" id="blobNext"></div>
-    </div>
     <div class="foot-tip" id="footTip">点屏幕倒沙 · 同色连通左右两边→整条溃散</div>
   </footer>
 </div>
@@ -103,6 +103,6 @@
 <div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
 <div class="toast" id="toast"></div>
 
-<script src="sand.js?v=007"></script>
+<script src="sand.js?v=009"></script>
 </body>
 </html>

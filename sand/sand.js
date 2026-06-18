@@ -50,7 +50,7 @@ const COMMISSIONS = [
 ];
 
 const STORY = [
-  { id: "S1", name: "序章 · 电梯惊停", elevator: "alarm", goal: 120, guided: true,
+  { id: "S1", name: "序章 · 电梯惊停", elevator: "alarm", goal: 60, guided: true,
     tip: "把<b>同色</b>沙从屏幕<b>最左连到最右</b>,整条贯通才溃散",
     pre: [
       ["sys", "警告——无尽电梯检测到裂隙湍流,下行暂停。检测到星盘共鸣者:苏星轮。"],
@@ -58,21 +58,21 @@ const STORY = [
       ["sword", "记住一条:把<同一种颜色>的沙,从屏幕<最左边>一路连到<最右边>——整条贯通,它才溃散成星光,缝住裂隙。"],
       ["sword", "点屏幕倒沙,往缺口填、把同色连成一线。我看着你。"]],
     post: [["sword", "……贯通了,漂亮。整条溃散的样子,比情报里写的好看。"], ["sword", "到了处理室,我教你怎么连着贯通、溃不停。"]] },
-  { id: "S2", name: "第一夜 · 处理室初开", elevator: "calm", goal: 200,
+  { id: "S2", name: "第一夜 · 处理室初开", elevator: "calm", goal: 120,
     tip: "贯通一条 → 上方塌落 → 再连成新贯通,<b>连锁溃散</b>",
     pre: [
       ["sword", "盘底四色都有——只有<同色>从最左连到最右,那一整条才溃散。"],
       ["sword", "诀窍是『溃不停』:贯通溃散后上面的沙塌下来,又能连成新一条,连着贯通,缝合翻倍。"],
       ["sword", "卡住了用左下『命运之轮』,它欠你一手好的。"]],
     post: [["sword", "看吧,连锁一起,根本停不下来。"]] },
-  { id: "S3", name: "第二夜 · 星象低语", elevator: "calm", goal: 300,
+  { id: "S3", name: "第二夜 · 星象低语", elevator: "calm", goal: 200,
     tip: "溃散谁的颜色,就唤回谁的一段记忆",
     pre: [
       ["cup", "听,星核穹顶在响。每溃散一大片他的星沙,就唤回他一段记忆。"],
       ["cup", "过层时能选一枚『星象法则』,大阿卡纳的碎片,会改写规则。"],
       ["cup", "选你喜欢的,它陪着你。"]],
     post: [["cup", "嗯,这一片,很温柔,也很正确。"]] },
-  { id: "S4", name: "第三夜 · 双人委托", elevator: "calm", goal: 420,
+  { id: "S4", name: "第三夜 · 双人委托", elevator: "calm", goal: 300,
     tip: "驻场双主的花色沙团更频繁,贯通他们的色",
     commission: ["cold", "tide"],
     pre: [["sys", "叮——事务所第一张正式委托抵达!裂隙强度上升,两位先生同时驻场。"], ["sys", "请选择本次委托的搭档组合。"]],
@@ -216,6 +216,9 @@ function layoutCanvas() {
   cv.style.width = cssW + "px"; cv.style.height = cssH + "px";
   cv.width = Math.round(cssW * dpr); cv.height = Math.round(cssH * dpr);
   cellPx = cv.width / GW;
+  /* 手中沙团跟随 canvas 顶部:落在红线(WARN_ROW)正上方 */
+  const bd = $("blobDock");
+  if (bd) bd.style.top = (cv.offsetTop + WARN_ROW * (cssH / GH) - 44) + "px";
 }
 
 /* ===================== 沙子物理(流体元胞自动机) ===================== */
@@ -403,18 +406,22 @@ function startLayer() {
   $("hintLine").innerHTML = S.curTip || "把同色沙从屏幕最左连到最右";
   cv.classList.remove("crisis");
   layoutCanvas(); preload(1, 39); updateHud(); renderRelics(); renderBlobUI();
-  /* 开局铺满下方:四色密集整块(短同色段打散,无单色横贯左右→不会开局自消);玩家投沙把同色连成横贯才溃散 */
-  const fillTop = Math.floor(GH * (S.story && S.stageIdx === 0 ? 0.5 : 0.42));
-  const cols = SUIT_KEYS.map(s => SUIT_IDX[s]);   /* 铺底始终四色全有(老大:初始四种颜色都在) */
-  for (let r = fillTop; r < GH; r++) {
-    let c = 0;
-    while (c < GW) {
-      const v = cols[Math.floor(Math.random() * cols.length)], run = 2 + Math.floor(Math.random() * 4); /* 同色短段 2-5 格,打散,不横贯 */
-      for (let k = 0; k < run && c < GW; k++, c++) { S.grid[idx(r, c)] = v; S.shade[idx(r, c)] = 0.9 + Math.random() * 0.14; }
+  /* 开局矮"小沙丘":弧形轮廓(中间高两边低,自然)+竖向大色块(成块不细碎)+轻噪声。
+     竖向分段、相邻段不同色 → 任何单色都不横贯左右 → 开局不自消。首夜矮+少色 = 简单。 */
+  const peak = (S.story && S.stageIdx === 0) ? 11 : 15 + S.layer * 3;   /* 沙丘峰高;首夜很矮 */
+  const cols = activeSuits().map(s => SUIT_IDX[s]);                      /* 渐进色数:S1 2色 … S3+ 4色 */
+  const segN = cols.length + 2 + S.layer;
+  const segW = GW / segN, segCol = [];
+  for (let i = 0; i < segN; i++) { let v; do { v = cols[Math.floor(Math.random() * cols.length)]; } while (i > 0 && v === segCol[i - 1] && cols.length > 1); segCol.push(v); }
+  for (let c = 0; c < GW; c++) {
+    const h = Math.round(peak * Math.pow(Math.sin(Math.PI * (c + 0.5) / GW), 0.62)) + 2;   /* 弧形,两端 min 2 行 */
+    const seg = Math.min(segN - 1, Math.floor(c / segW));
+    for (let k = 0; k < h; k++) {
+      const r = GH - 1 - k;
+      const v = Math.random() < 0.1 ? cols[Math.floor(Math.random() * cols.length)] : segCol[seg];   /* 10% 噪声,自然但仍成块 */
+      S.grid[idx(r, c)] = v; S.shade[idx(r, c)] = 0.9 + Math.random() * 0.14;
     }
   }
-  /* 安全:若开局随机出现某色横贯(极低概率),打断它(改一粒)以防开局自消 */
-  for (let r = fillTop; r < GH; r++) { if (S.grid[idx(r, 0)] === S.grid[idx(r, GW - 1)]) { const other = cols.find(x => x !== S.grid[idx(r, 0)]); if (other) S.grid[idx(r, GW >> 1)] = other; } }
   const dl = dutyLead(); setLeadBar(dl); setTimeout(() => say(dl, "start", true), 700);
   startLoop(); S.paused = false;
 }

@@ -319,37 +319,39 @@ function leadInnerVoice(suit) {
   setTimeout(() => toast("✦ 灵宝:" + lines[suit], 3000), 600);
 }
 
-/* ===================== 渲染:发光星沙精灵(预渲染,亮心+高光,晶莹质感) ===================== */
-const SPRITES = {};
-function makeSprites() {
-  const SZ = 28;
+/* ===================== 渲染:柔光星沙(实心无缝 + bloom 辉光,去像素颗粒感) ===================== */
+const BRIGHT = {}, GLOW = {};
+function initColors() {
   for (const k of SUIT_KEYS) {
     const [r, g, b] = SUITS[k].rgb;
-    const oc = document.createElement("canvas"); oc.width = SZ; oc.height = SZ;
-    const o = oc.getContext("2d");
-    const grad = o.createRadialGradient(SZ * 0.38, SZ * 0.34, SZ * 0.05, SZ * 0.5, SZ * 0.5, SZ * 0.62);
-    grad.addColorStop(0, `rgb(${Math.min(255, r + 120)},${Math.min(255, g + 120)},${Math.min(255, b + 120)})`);   /* 亮心 */
-    grad.addColorStop(0.42, `rgb(${r},${g},${b})`);
-    grad.addColorStop(1, `rgb(${r * 0.48 | 0},${g * 0.48 | 0},${b * 0.48 | 0})`);                                   /* 暗边 */
-    o.fillStyle = grad;
-    if (o.roundRect) { o.beginPath(); o.roundRect(1.5, 1.5, SZ - 3, SZ - 3, SZ * 0.32); o.fill(); }
-    else { o.fillRect(1.5, 1.5, SZ - 3, SZ - 3); }
-    o.fillStyle = "rgba(255,255,255,0.6)";                                                                          /* 高光点 */
-    o.beginPath(); o.arc(SZ * 0.34, SZ * 0.3, SZ * 0.12, 0, 7); o.fill();
-    SPRITES[SUIT_IDX[k]] = oc;
+    BRIGHT[SUIT_IDX[k]] = `rgb(${Math.min(255, r + 50)},${Math.min(255, g + 50)},${Math.min(255, b + 50)})`;  /* 提亮柔和 */
+    GLOW[SUIT_IDX[k]] = `rgb(${r},${g},${b})`;
   }
 }
+let bloomCv = null;
 function render() {
   if (!cx) return;
   cx.clearRect(0, 0, cv.width, cv.height);
-  const wy = WARN_ROW * cellPx;
-  cx.strokeStyle = "rgba(255,91,110,0.5)"; cx.lineWidth = Math.max(1.5, dpr); cx.setLineDash([8 * dpr, 6 * dpr]);
-  cx.beginPath(); cx.moveTo(0, wy); cx.lineTo(cv.width, wy); cx.stroke(); cx.setLineDash([]);
-  const g = S.grid, w = cellPx + 1.3;
+  /* 沙:实心无缝填充 → 同色融成连续光块,无格子边框 */
+  const g = S.grid, w = cellPx + 1.4;
   for (let r = 0; r < GH; r++) for (let c = 0; c < GW; c++) {
     const v = g[idx(r, c)]; if (!v) continue;
-    const sp = SPRITES[v]; if (sp) cx.drawImage(sp, c * cellPx - 0.4, r * cellPx - 0.4, w, w);
+    cx.fillStyle = GLOW[v]; cx.fillRect(c * cellPx - 0.2, r * cellPx - 0.2, w, w);   /* 饱和原色实心 */
   }
+  /* bloom 辉光:沙层离屏模糊后低强度叠加 → 边缘柔光,中心保持饱和(不过曝发白) */
+  try {
+    if (!bloomCv) bloomCv = document.createElement("canvas");
+    if (bloomCv.width !== cv.width) { bloomCv.width = cv.width; bloomCv.height = cv.height; }
+    const bx = bloomCv.getContext("2d");
+    bx.clearRect(0, 0, cv.width, cv.height); bx.drawImage(cv, 0, 0);
+    cx.save(); cx.globalCompositeOperation = "lighter"; cx.globalAlpha = 0.3;
+    cx.filter = `blur(${(cellPx * 0.8).toFixed(1)}px)`; cx.drawImage(bloomCv, 0, 0);
+    cx.filter = "none"; cx.restore();
+  } catch (e) {}
+  /* 红线(bloom 之后画,保持清晰) */
+  const wy = WARN_ROW * cellPx;
+  cx.strokeStyle = "rgba(255,91,110,0.45)"; cx.lineWidth = Math.max(1.5, dpr); cx.setLineDash([8 * dpr, 6 * dpr]);
+  cx.beginPath(); cx.moveTo(0, wy); cx.lineTo(cv.width, wy); cx.stroke(); cx.setLineDash([]);
 }
 
 /* ===================== HUD / 计时 ===================== */
@@ -590,4 +592,4 @@ function bindUI() {
 }
 
 /* ===================== 启动 ===================== */
-makeSprites(); layoutCanvas(); bindUI(); showTitle();
+initColors(); layoutCanvas(); bindUI(); showTitle();

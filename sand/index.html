@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#070b1a">
 <title>星沙 · 内部演示</title>
-<link rel="stylesheet" href="sand.css?v=003">
+<link rel="stylesheet" href="sand.css?v=005">
 </head>
 <body>
 <canvas id="starfield"></canvas>
@@ -82,7 +82,13 @@
       <svg viewBox="0 0 48 48"><use href="#glyph-wheel"/></svg>
       <span class="arcana-uses" id="arcanaUses">1</span>
     </button>
-    <div class="foot-tip" id="footTip">同色星沙连成一片,点它溃散</div>
+    <div class="next-rail">
+      <span class="next-label">手中</span>
+      <div class="blob-slot" id="blobCur"></div>
+      <span class="next-label dim">下一</span>
+      <div class="blob-slot small" id="blobNext"></div>
+    </div>
+    <div class="foot-tip" id="footTip">点屏幕倒沙 · 同色凑一片自动溃散</div>
   </footer>
 </div>
 
@@ -97,6 +103,6 @@
 <div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
 <div class="toast" id="toast"></div>
 
-<script src="sand.js?v=003"></script>
+<script src="sand.js?v=005"></script>
 </body>
 </html>

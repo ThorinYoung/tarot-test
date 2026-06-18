@@ -51,29 +51,29 @@ const COMMISSIONS = [
 
 const STORY = [
   { id: "S1", name: "序章 · 电梯惊停", elevator: "alarm", goal: 120, guided: true,
-    tip: "点屏幕 → 这团星沙就从那儿<b>倒下</b>;同色凑一片自动溃散",
+    tip: "把<b>同色</b>沙从屏幕<b>最左连到最右</b>,整条贯通才溃散",
     pre: [
       ["sys", "警告——无尽电梯检测到裂隙湍流,下行暂停。检测到星盘共鸣者:苏星轮。"],
-      ["sword", "别慌。裂隙把星魂磨成了沙,攥在你手里——青的、红的,先认这两色。"],
-      ["sword", "点星盘任意位置,这团沙就从那儿倒下、像水一样淌开堆积。"],
-      ["sword", "同色的沙堆够一片,它会<自己>溃散成星光,缝住裂隙。往一处倒,凑大片。我看着你。"]],
-    post: [["sword", "……稳住了。手感不错,比情报里写的有趣。"], ["sword", "到了处理室,我教你怎么连着倒、溃不停。"]] },
-  { id: "S2", name: "第一夜 · 处理室初开", elevator: "calm", goal: 220,
-    tip: "往同色堆里倒 → 连成更大片 → <b>连锁溃散</b>不停",
+      ["sword", "别慌。裂隙把星魂磨成了沙,堆满了盘底——四种颜色都散在里头,本身不会动。"],
+      ["sword", "记住一条:把<同一种颜色>的沙,从屏幕<最左边>一路连到<最右边>——整条贯通,它才溃散成星光,缝住裂隙。"],
+      ["sword", "点屏幕倒沙,往缺口填、把同色连成一线。我看着你。"]],
+    post: [["sword", "……贯通了,漂亮。整条溃散的样子,比情报里写的好看。"], ["sword", "到了处理室,我教你怎么连着贯通、溃不停。"]] },
+  { id: "S2", name: "第一夜 · 处理室初开", elevator: "calm", goal: 200,
+    tip: "贯通一条 → 上方塌落 → 再连成新贯通,<b>连锁溃散</b>",
     pre: [
-      ["sword", "这层起会换不同颜色的沙——记住,只有<同色>堆够一片才溃散。"],
-      ["sword", "诀窍是『溃不停』:溃散后上面的沙塌下来,又凑成新一片,连着溃,缝合翻倍。"],
+      ["sword", "盘底四色都有——只有<同色>从最左连到最右,那一整条才溃散。"],
+      ["sword", "诀窍是『溃不停』:贯通溃散后上面的沙塌下来,又能连成新一条,连着贯通,缝合翻倍。"],
       ["sword", "卡住了用左下『命运之轮』,它欠你一手好的。"]],
     post: [["sword", "看吧,连锁一起,根本停不下来。"]] },
-  { id: "S3", name: "第二夜 · 星象低语", elevator: "calm", goal: 340,
+  { id: "S3", name: "第二夜 · 星象低语", elevator: "calm", goal: 300,
     tip: "溃散谁的颜色,就唤回谁的一段记忆",
     pre: [
       ["cup", "听,星核穹顶在响。每溃散一大片他的星沙,就唤回他一段记忆。"],
       ["cup", "过层时能选一枚『星象法则』,大阿卡纳的碎片,会改写规则。"],
       ["cup", "选你喜欢的,它陪着你。"]],
     post: [["cup", "嗯,这一片,很温柔,也很正确。"]] },
-  { id: "S4", name: "第三夜 · 双人委托", elevator: "calm", goal: 470,
-    tip: "驻场双主的花色沙团更频繁",
+  { id: "S4", name: "第三夜 · 双人委托", elevator: "calm", goal: 420,
+    tip: "驻场双主的花色沙团更频繁,贯通他们的色",
     commission: ["cold", "tide"],
     pre: [["sys", "叮——事务所第一张正式委托抵达!裂隙强度上升,两位先生同时驻场。"], ["sys", "请选择本次委托的搭档组合。"]],
     post: [["sys", "委托完成!事务所与裂隙处理室全面开放。"], ["sys", "「无尽夜」已解锁——想缝多久,就缝多久。"]] },
@@ -81,8 +81,8 @@ const STORY = [
 
 /* ===================== 数值 ===================== */
 const GW = 88, GH = 124;       /* ~1 万粒细沙 */
-const CLEAR_MIN = 16;          /* 同色连通 ≥ 此值自动溃散 */
-const BIG_CLEAR = 90;          /* 大片溃散("点亮") */
+const CLEAR_MIN = 16;          /* (保留)横贯消除不用数量门槛,仅供旧引用 */
+const BIG_CLEAR = 260;         /* 大片横贯("点亮"):一次溃散 ≥ 此粒数 = 唤回整段记忆 */
 const PHYS_MS = 15;            /* 物理步长(短=流动顺) */
 const SUBSTEP = 2;             /* 每次物理跑几遍(流体更顺) */
 const POUR_MS = 9;             /* 倾倒滴速(一团沙倒下的快慢) */
@@ -272,14 +272,16 @@ function autoClearScan() {
   for (let r = 0; r < GH; r++) for (let c = 0; c < GW; c++) {
     const k = idx(r, c); if (!g[k] || vis[k]) continue;
     const suit = g[k], comp = [k], stack = [k]; vis[k] = 1;
+    let touchL = false, touchR = false;     /* 是否触及最左/最右边界 */
     while (stack.length) {
       const cur = stack.pop(), cr = (cur / GW) | 0, cc = cur % GW;
+      if (cc === 0) touchL = true; if (cc === GW - 1) touchR = true;
       if (cr + 1 < GH) { const nk = cur + GW; if (g[nk] === suit && !vis[nk]) { vis[nk] = 1; stack.push(nk); comp.push(nk); } }
       if (cr - 1 >= 0) { const nk = cur - GW; if (g[nk] === suit && !vis[nk]) { vis[nk] = 1; stack.push(nk); comp.push(nk); } }
       if (cc + 1 < GW) { const nk = cur + 1; if (g[nk] === suit && !vis[nk]) { vis[nk] = 1; stack.push(nk); comp.push(nk); } }
       if (cc - 1 >= 0) { const nk = cur - 1; if (g[nk] === suit && !vis[nk]) { vis[nk] = 1; stack.push(nk); comp.push(nk); } }
     }
-    if (comp.length >= CLEAR_MIN) groups.push({ suit, comp });
+    if (touchL && touchR) groups.push({ suit, comp });   /* 同色横贯左右两边 → 整片溃散(Sandtrix 式) */
   }
   if (!groups.length) return;
   S.combo = (S.comboT > 0 ? S.combo + 1 : 1); S.comboT = COMBO_WIN * (hasLaw("temperance") ? 1.5 : 1); S.maxCombo = Math.max(S.maxCombo, S.combo);
@@ -293,8 +295,8 @@ function autoClearScan() {
 }
 function burstClear(suit, comp) {
   const size = comp.length, isBig = size >= BIG_CLEAR;
-  let base = size * 0.35 + Math.max(0, size - CLEAR_MIN) * 0.12;
-  if (isBig) base += 24;
+  let base = size * 0.2;        /* 横贯片本就很大(≥屏宽),系数低 */
+  if (isBig) base += 30;
   if (hasLaw("sun")) base += 8;
   if (hasLaw("star") && isBig) base += 24;
   if (hasLaw("lovers") && suit === "cup") base *= 1.5;
@@ -397,11 +399,22 @@ function startLayer() {
   S.wheelUses = 1 + (hasLaw("wheel") ? 1 : 0);
   $("btnArcana").classList.remove("used"); $("arcanaUses").textContent = S.wheelUses; $("btnArcana").classList.add("ready");
   $("layerName").textContent = layerName();
-  $("footTip").innerHTML = "点屏幕倒沙 · 同色凑一片自动溃散";
-  $("hintLine").innerHTML = S.curTip || "点屏幕,把这团星沙倒下去";
+  $("footTip").innerHTML = "点屏幕倒沙 · 同色连通左右两边→整条溃散";
+  $("hintLine").innerHTML = S.curTip || "把同色沙从屏幕最左连到最右";
   cv.classList.remove("crisis");
   layoutCanvas(); preload(1, 39); updateHud(); renderRelics(); renderBlobUI();
-  /* 开局空盘:玩家主动投放才有沙。绝不预铺大片同色(否则会被自动溃散秒消→开局直接过关) */
+  /* 开局铺满下方:四色密集整块(短同色段打散,无单色横贯左右→不会开局自消);玩家投沙把同色连成横贯才溃散 */
+  const fillTop = Math.floor(GH * (S.story && S.stageIdx === 0 ? 0.5 : 0.42));
+  const cols = SUIT_KEYS.map(s => SUIT_IDX[s]);   /* 铺底始终四色全有(老大:初始四种颜色都在) */
+  for (let r = fillTop; r < GH; r++) {
+    let c = 0;
+    while (c < GW) {
+      const v = cols[Math.floor(Math.random() * cols.length)], run = 2 + Math.floor(Math.random() * 4); /* 同色短段 2-5 格,打散,不横贯 */
+      for (let k = 0; k < run && c < GW; k++, c++) { S.grid[idx(r, c)] = v; S.shade[idx(r, c)] = 0.9 + Math.random() * 0.14; }
+    }
+  }
+  /* 安全:若开局随机出现某色横贯(极低概率),打断它(改一粒)以防开局自消 */
+  for (let r = fillTop; r < GH; r++) { if (S.grid[idx(r, 0)] === S.grid[idx(r, GW - 1)]) { const other = cols.find(x => x !== S.grid[idx(r, 0)]); if (other) S.grid[idx(r, GW >> 1)] = other; } }
   const dl = dutyLead(); setLeadBar(dl); setTimeout(() => say(dl, "start", true), 700);
   startLoop(); S.paused = false;
 }
@@ -514,15 +527,15 @@ function endlessSettle() {
 
 /* ===================== 图鉴 / 标题 ===================== */
 function showCodex() {
-  modal(`<h2>玩法图鉴</h2><div class="m-sub">点屏幕倒沙,同色凑一片自动溃散 · 花色 = 男主</div>
+  modal(`<h2>玩法图鉴</h2><div class="m-sub">同色沙横贯屏幕左右才整条溃散 · 花色 = 男主</div>
     <table class="codex-table">
       <tr><td class="cx-tier">投放</td><td class="cx-desc">点星盘任意处 → 手里这团沙从那儿倒下,流体堆积</td></tr>
-      <tr><td class="cx-tier">自动溃散</td><td class="cx-desc">同色连成 ≥ ${CLEAR_MIN} 粒一片,自动溃成星光缝合裂隙</td></tr>
-      <tr><td class="cx-tier">溃不停</td><td class="cx-desc">溃散后上方塌落、再凑成片,连锁不停,缝合翻倍</td></tr>
-      <tr><td class="cx-tier">大片</td><td class="cx-desc">一次 ≥ ${BIG_CLEAR} 粒 = 唤回他一整段记忆(大额缝合)</td></tr>
+      <tr><td class="cx-tier">贯通溃散</td><td class="cx-desc">同色沙<b>从最左连通到最右</b>,整条贯通片溃成星光缝合裂隙</td></tr>
+      <tr><td class="cx-tier">溃不停</td><td class="cx-desc">贯通溃散后上方塌落、再连成新贯通,连锁不停,缝合翻倍</td></tr>
+      <tr><td class="cx-tier">大片</td><td class="cx-desc">一次溃散 ≥ ${BIG_CLEAR} 粒 = 唤回他一整段记忆(大额缝合)</td></tr>
       <tr><td class="cx-tier">过载</td><td class="cx-desc">星沙漫过顶部警戒线 → 驻场男主托住救场</td></tr>
     </table>
-    <p class="m-text" style="font-size:12.5px">· <span class="kw">同色才溃</span>,往同色堆里倒,凑大片<br>· 命运之轮每层一次:同辉归一 / 净空 / 星震<br>· 过层选「星象法则」改写规则(roguelike)</p>
+    <p class="m-text" style="font-size:12.5px">· 盘底铺满四色,本身散着<span class="kw">不会自消</span><br>· 只有<span class="kw">同色从左墙连到右墙</span>,那一整条才溃散<br>· 命运之轮每层一次:同辉归一 / 净空 / 星震<br>· 过层选「星象法则」改写规则(roguelike)</p>
     <button class="m-btn" id="mClose">回到星盘</button>`);
   $("mClose").onclick = () => { if ($("app").style.display === "none") backToTitle(); else { closeModal(); S.paused = false; } };
 }

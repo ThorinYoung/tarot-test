@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#070b1a">
 <title>星沙 · 内部演示</title>
-<link rel="stylesheet" href="sand.css?v=011">
+<link rel="stylesheet" href="sand.css?v=028">
 </head>
 <body>
 <canvas id="starfield"></canvas>
@@ -32,6 +32,7 @@
       <button class="ts-btn primary" id="btnStory">✦ 首夜 · 剧情远征</button>
       <button class="ts-btn" id="btnEndless" disabled>无尽夜(完成首夜解锁)</button>
       <button class="ts-btn ghost" id="btnHelp2">玩法图鉴</button>
+      <button class="ts-btn ghost" id="btnAlbum">★ 星轨手账</button>
       <button class="ts-btn ghost" id="btnReset">重置进度</button>
     </div>
     <div class="ts-note">内部验证原型 · 立绘/语音为占位 ⚠️ 等资产到位再换<br>
@@ -61,17 +62,37 @@
       <div class="goal-bar"><div class="goal-fill" id="goalFill"></div></div>
       <div class="goal-num"><b id="seamNow">0</b>/<span id="seamGoal">0</span></div>
     </div>
+    <div class="elem-row">
+      <div class="elem-bar">
+        <span class="elem-seg" data-s="wand" style="background:#ff4d2e"></span>
+        <span class="elem-seg" data-s="coin" style="background:#ffd21f"></span>
+        <span class="elem-seg" data-s="sword" style="background:#15d683"></span>
+        <span class="elem-seg" data-s="cup" style="background:#4a7bff"></span>
+      </div>
+      <span class="elem-label" id="elemLabel">星河 —</span>
+    </div>
     <div class="relic-row" id="relicRow"></div>
   </header>
 
   <div class="lead-bar" id="leadBar">
-    <div class="lead-avatar" id="leadAvatar"><svg viewBox="0 0 48 48" fill="none"><use id="leadGlyph" href="#glyph-sword"/></svg></div>
-    <div class="lead-bubble"><div class="lb-name" id="lbName">—</div><div class="lb-text" id="lbText">…</div></div>
+    <div class="lead-avatar" id="leadAvatar" title="攒满星力,点他召唤">
+      <img class="lead-portrait" id="leadPortrait" src="../assets/characters/xingsha-lead-ui.png" alt="">
+      <svg viewBox="0 0 48 48" fill="none"><use id="leadGlyph" href="#glyph-sword"/></svg>
+    </div>
+    <div class="lead-bubble"><div class="lb-name" id="lbName">—</div><div class="lb-text" id="lbText">…</div>
+      <div class="power-bar"><div class="power-fill" id="powerFill"></div></div>
+    </div>
   </div>
 
   <!-- 星沙容器 -->
   <div class="sand-zone" id="sandZone">
     <canvas id="sandCanvas"></canvas>
+    <div class="character-cameo" id="characterCameo" aria-hidden="true">
+      <div class="character-cameo__portrait">
+        <img src="../assets/characters/xingsha-lead-ui.png" alt="">
+      </div>
+      <span class="cameo-suit"><svg viewBox="0 0 48 48"><use href="#glyph-octa"/></svg></span>
+    </div>
     <!-- 手中沙团:悬在红线上方,准备倒下 -->
     <div class="blob-dock" id="blobDock">
       <div class="blob-slot" id="blobCur"></div>
@@ -95,7 +116,10 @@
 <!-- 对白层 -->
 <div class="dlg-layer" id="dlgLayer" style="display:none">
   <div class="dlg-sheet">
-    <div class="dlg-avatar" id="dlgAvatar"><svg viewBox="0 0 48 48" fill="none"><use id="dlgGlyph" href="#glyph-sword"/></svg></div>
+    <div class="dlg-avatar" id="dlgAvatar">
+      <div class="dlg-avatar__portrait"><img class="dlg-portrait" src="../assets/characters/xingsha-lead-ui.png" alt=""></div>
+      <span class="dlg-suit"><svg viewBox="0 0 48 48" fill="none"><use id="dlgGlyph" href="#glyph-sword"/></svg></span>
+    </div>
     <div class="dlg-body"><div class="dlg-name" id="dlgName">—</div><div class="dlg-text" id="dlgText"></div><div class="dlg-next">▼ 点击继续</div></div>
   </div>
 </div>
@@ -103,6 +127,6 @@
 <div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
 <div class="toast" id="toast"></div>
 
-<script src="sand.js?v=012"></script>
+<script src="sand.js?v=034"></script>
 </body>
 </html>

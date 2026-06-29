@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#efe6d4">
+<title>星盘影游 · 主界面原型</title>
+<style>
+  :root{--gold:#c9a24b;--gold2:#bf9b5a;--gold-soft:#e6d2a0;--ink:#7a6326;--ink2:#9a824a;--white:#fffaf0}
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{font-family:"PingFang SC","Microsoft YaHei",-apple-system,sans-serif;background:#1a1812;display:flex;justify-content:center;overflow:hidden}
+  .app{position:relative;width:100%;max-width:440px;height:100vh;height:100dvh;overflow:hidden;color:var(--ink);user-select:none;
+    background:radial-gradient(120% 80% at 50% 16%, #fffbf2 0%, #f3e9d4 42%, #e7d6b3 78%, #dcc79c 100%)}
+
+  /* ===== 立绘看板 = 家(根) ===== */
+  .home{position:absolute;inset:0;z-index:10}
+  .topbar{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:5px;padding:9px 9px;z-index:14}
+  .lv{position:relative;width:38px;height:38px;flex:none;border-radius:50%;border:1.5px solid var(--gold);background:rgba(255,251,242,.7);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 12px rgba(201,162,75,.4);cursor:pointer}
+  .lv b{font-size:15px;color:var(--ink);line-height:1}.lv span{font-size:7px;color:var(--ink2)}
+  .exp{flex:none;width:58px}.exp .num{font-size:9px;color:var(--ink2);margin-bottom:3px;white-space:nowrap}
+  .exp .bar{height:5px;border-radius:3px;background:rgba(154,130,74,.25);overflow:hidden}
+  .exp .fill{height:100%;width:58%;background:linear-gradient(90deg,var(--gold-soft),var(--gold));border-radius:3px}
+  .cur{margin-left:auto;display:flex;gap:4px;align-items:center}
+  .coin{display:flex;align-items:center;gap:2px;background:rgba(255,251,242,.66);border:1px solid var(--gold-soft);border-radius:12px;padding:2px 5px;font-size:10px;color:var(--ink);white-space:nowrap}
+  .coin svg{width:12px;height:12px;flex:none}
+  .capsule{flex:none;display:flex;align-items:center;gap:3px;padding:5px 8px;border-radius:14px;border:1px solid rgba(154,130,74,.35);background:rgba(180,160,120,.18);margin-left:3px}
+  .capsule .cd{width:3px;height:3px;border-radius:50%;background:var(--ink2)}
+  .capsule .cdiv{width:1px;height:12px;background:rgba(154,130,74,.4);margin:0 2px}
+  .capsule .cc{width:11px;height:11px;border-radius:50%;border:1.4px solid var(--ink2)}
+  .vip{flex:none;font-size:9px;color:#fff;background:linear-gradient(90deg,#caa24b,#b8893a);border-radius:8px;padding:2px 5px;font-weight:600;cursor:pointer}
+  .ann{width:22px;height:22px;flex:none;color:var(--ink2);cursor:pointer}
+
+  .stage{position:absolute;inset:0;overflow:hidden}
+  .astro{position:absolute;top:4%;left:50%;transform:translateX(-32%);width:128%;max-width:580px;opacity:.5;color:var(--gold);animation:spin 120s linear infinite}
+  @keyframes spin{to{transform:translateX(-32%) rotate(360deg)}}
+  .glow{position:absolute;top:6%;left:50%;transform:translateX(-50%);width:88%;height:62%;background:radial-gradient(50% 50% at 50% 40%, rgba(255,250,235,.9), rgba(255,245,220,.2) 60%, transparent 75%);filter:blur(2px)}
+  .portrait{position:absolute;bottom:22%;left:50%;transform:translateX(-46%);height:62%;width:auto;color:#cabd9a;opacity:.5;filter:drop-shadow(0 0 30px rgba(245,235,205,.8))}
+  .feather{position:absolute;color:#fff;animation:float 9s ease-in-out infinite}
+  .feather.f1{top:24%;left:30%;width:20px}.feather.f2{top:46%;right:30%;width:26px;animation-delay:-4s}
+  @keyframes float{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-16px) rotate(8deg)}}
+  .ratio{position:absolute;top:38%;left:50%;transform:translateX(60px);font-family:Georgia,serif;font-size:12px;color:var(--gold2);letter-spacing:2px;opacity:.7}
+  .quote{position:absolute;top:27%;left:50%;transform:translateX(-50%);text-align:center;text-shadow:0 1px 8px rgba(255,250,240,.9)}
+  .quote .l1{font-size:13px;color:#6f5a26}.quote .l2{font-size:22px;font-weight:600;color:#7c6019;letter-spacing:2px;margin:2px 0 6px}
+  .quote .l2 b{border-bottom:2px solid var(--gold);padding-bottom:3px}
+  .quote .en{font-family:Georgia,serif;font-style:italic;font-size:9px;color:var(--ink2);line-height:1.5}
+  .tap-portrait{position:absolute;left:25%;right:25%;top:38%;bottom:30%;z-index:11;cursor:pointer}
+  .tap-hint{position:absolute;bottom:35%;left:50%;transform:translateX(-50%);font-size:10px;color:var(--ink2);background:rgba(255,251,242,.6);border-radius:10px;padding:3px 10px;z-index:11;animation:float 3s ease-in-out infinite}
+
+  .charsw{position:absolute;left:11px;top:54px;display:flex;align-items:center;gap:5px;background:rgba(255,251,242,.7);border:1px solid var(--gold-soft);border-radius:16px;padding:4px 10px 4px 6px;z-index:13;cursor:pointer}
+  .charsw .av{width:22px;height:22px;border-radius:50%;background:radial-gradient(#fff,#e8d6a8);border:1px solid var(--gold);display:flex;align-items:center;justify-content:center}
+  .charsw .av svg{width:13px;height:13px;color:var(--ink)}
+  .charsw .t{font-size:11px;color:var(--ink)}.charsw .sw{font-size:11px;color:var(--gold2)}
+
+  /* 左上 低频列 / 右上 高频列 */
+  .col{position:absolute;display:flex;flex-direction:column;gap:10px;z-index:13}
+  .col.l{left:11px;top:92px}.col.r{right:11px;top:96px}
+  .ico{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;transition:transform .15s}.ico:active{transform:scale(.9)}
+  .ico .disc{position:relative;width:44px;height:44px;border-radius:50%;border:1.5px solid var(--gold);background:rgba(255,251,242,.62);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 9px rgba(201,162,75,.28), inset 0 0 8px rgba(255,255,255,.6)}
+  .ico.hi .disc{background:linear-gradient(160deg,#f6e9c6,#ecd095)}
+  .ico .disc svg{width:22px;height:22px;color:var(--ink)}
+  .ico .lab{font-size:9px;color:var(--ink);font-weight:500;text-shadow:0 1px 4px rgba(255,250,240,.9)}
+  .dot{position:absolute;top:-1px;right:-1px;width:9px;height:9px;border-radius:50%;background:#e2483f;border:2px solid var(--white)}
+
+  /* 左下/右下 两大支柱 */
+  .corner{position:absolute;bottom:20px;width:130px;height:108px;border-radius:18px;border:2px solid var(--gold);overflow:hidden;cursor:pointer;z-index:13;
+    display:flex;flex-direction:column;justify-content:flex-end;padding:12px;box-shadow:0 4px 18px rgba(201,162,75,.45);transition:transform .15s}
+  .corner:active{transform:scale(.96)}
+  .corner.left{left:14px;background:linear-gradient(160deg,rgba(60,50,34,.92),rgba(95,80,48,.85))}
+  .corner.right{right:14px;background:linear-gradient(160deg,rgba(70,56,90,.9),rgba(95,78,46,.82))}
+  .corner .elev-line{position:absolute;left:18px;top:-8px;bottom:-8px;width:3px;background:linear-gradient(180deg,transparent,var(--gold),transparent);box-shadow:0 0 12px var(--gold)}
+  .corner .t{font-size:17px;color:#fff;font-weight:600;letter-spacing:1px;position:relative}
+  .corner .d{font-size:9px;color:#e6d2a0;margin-top:3px;position:relative}
+  .corner .cdot{position:absolute;top:10px;right:12px;width:9px;height:9px;border-radius:50%;background:#e2483f}
+
+  /* ===== 通用卡片 ===== */
+  .panel{background:rgba(255,251,242,.72);border:1px solid var(--gold-soft);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 2px 12px rgba(201,162,75,.12)}
+  .panel h3{font-size:13px;color:var(--ink);margin-bottom:10px;font-weight:600}
+  .li{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:10px;background:rgba(234,221,191,.55);margin-bottom:8px;font-size:13px;color:var(--ink)}
+  .li:last-child{margin-bottom:0}
+  .li .r{display:flex;align-items:center;gap:5px;font-size:12px;color:#fff;background:var(--gold);border-radius:8px;padding:4px 10px;cursor:pointer}
+  .li.hot{background:linear-gradient(90deg,#f3e2b8,#ecd095);border:1px solid var(--gold)}
+  .pip{width:7px;height:7px;border-radius:50%;background:#e2483f;display:inline-block;margin-right:6px}
+  .signrow{display:flex;gap:6px}
+  .signcell{flex:1;aspect-ratio:1;border-radius:9px;border:1px solid var(--gold-soft);background:rgba(234,221,191,.5);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;color:var(--ink2);gap:2px}
+  .signcell.done{background:linear-gradient(180deg,#f3e2b8,#e7cf9a);color:var(--ink);border-color:var(--gold)}
+  .signcell.today2{border:2px solid #e2483f}.signcell b{font-size:14px;color:var(--ink)}
+  .work{display:flex;gap:12px;align-items:center;padding:14px;border-radius:14px;margin-bottom:12px;background:linear-gradient(120deg,rgba(50,42,28,.92),rgba(80,66,40,.85));color:#f3e7cc;cursor:pointer}
+  .work .cover{width:64px;height:84px;border-radius:9px;flex:none;border:1px solid var(--gold);background:radial-gradient(60% 60% at 50% 30%, #6b5fa0, #2a2350)}
+  .work h4{font-size:15px;color:#fff;margin-bottom:5px}.work p{font-size:11px;color:#d9c79f;line-height:1.5}
+  .work .go{margin-top:7px;display:inline-block;font-size:11px;color:#1a1812;background:var(--gold-soft);border-radius:7px;padding:3px 10px}
+  .gachacard{background:linear-gradient(160deg,rgba(60,50,32,.9),rgba(95,78,46,.85));border:1px solid var(--gold);border-radius:14px;padding:18px 14px;text-align:center;color:#f3e7cc;margin-bottom:12px}
+  .gachacard h4{font-size:15px;color:#fff;margin-bottom:4px}.gachacard p{font-size:11px;color:#d9c79f;margin-bottom:14px}
+  .gbtns{display:flex;gap:8px}.gbtns .b{flex:1;padding:10px;border-radius:10px;font-size:13px;background:rgba(255,251,242,.85);color:var(--ink);font-weight:600;cursor:pointer}
+  .gbtns .b.x10{background:linear-gradient(160deg,#f3e2b8,#e0c386);border:1px solid var(--gold)}
+  .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .gcell{border-radius:12px;padding:16px 10px;font-size:13px;text-align:center;cursor:pointer;background:rgba(255,251,242,.72);border:1px solid var(--gold-soft);color:var(--ink);transition:transform .15s}.gcell:active{transform:scale(.96)}
+  .gcell .gt{font-weight:600;margin-bottom:4px}.gcell .gd{font-size:10px;color:var(--ink2)}
+  .gcell.feat{background:linear-gradient(150deg,#f3e2b8,#e6cf9c);border:2px solid var(--gold)}
+  .gcell.dark{background:linear-gradient(150deg,rgba(40,33,24,.92),rgba(70,56,90,.8));color:#f3e7cc}.gcell.dark .gd{color:#cdbce8}
+  .muted{font-size:11px;color:var(--ink2);text-align:center;margin-top:4px}
+  .gbtn{display:inline-block;font-size:11px;background:rgba(60,50,32,.85);color:#f3e7cc;border:1px solid var(--gold-soft);border-radius:8px;padding:7px 12px;margin:3px 5px 0 0;cursor:pointer}
+  .room-portrait{width:100px;height:130px;border-radius:12px;border:1px solid var(--gold);margin:6px auto 12px;background:radial-gradient(60% 50% at 50% 35%,#7a6fb0,#2a2350);display:flex;align-items:center;justify-content:center}
+  .room-portrait svg{width:44px;height:44px;color:#cdbce8}
+  .msg{max-width:80%;font-size:13px;padding:9px 12px;border-radius:12px;line-height:1.5}
+  .msg.him{align-self:flex-start;background:linear-gradient(135deg,#f4e8cc,#ecdab2);color:var(--ink)}
+  .dim{height:170px;background:linear-gradient(160deg,#211d3a,#0e1430);border:1px solid var(--gold);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#e8dfc0;margin-bottom:12px}
+  .dress{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .dress .d{aspect-ratio:3/4;border-radius:10px;border:1px solid var(--gold-soft);background:rgba(234,221,191,.5);display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;font-size:10px;color:var(--ink2);cursor:pointer}
+  .dress .d.on{border:2px solid var(--gold);background:linear-gradient(160deg,#f3e2b8,#e6d0a0);color:var(--ink)}
+  .seg{display:flex;gap:6px;margin-bottom:12px}.seg .s{flex:1;text-align:center;padding:8px;border-radius:9px;font-size:12px;background:rgba(234,221,191,.5);color:var(--ink2);cursor:pointer}.seg .s.on{background:linear-gradient(160deg,#f3e2b8,#e6d0a0);color:var(--ink);font-weight:600;border:1px solid var(--gold)}
+
+  /* dock 已移除, 改四角 */
+  .page{position:absolute;inset:0;z-index:40;background:radial-gradient(120% 80% at 50% 12%, #fffbf2, #f1e6cf 55%, #e3d2ab 100%);transform:translateX(100%);transition:transform .26s cubic-bezier(.3,.7,.3,1);display:flex;flex-direction:column;overflow:hidden}
+  .page.show{transform:translateX(0)}
+  .page-head{display:flex;align-items:center;gap:10px;padding:14px 14px 10px}
+  .nav-btn{width:34px;height:34px;border-radius:50%;border:1px solid var(--gold-soft);background:rgba(255,251,242,.7);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
+  .nav-btn svg{width:18px;height:18px;color:var(--ink)}
+  .page-head h2{font-size:17px;color:#6f5a26;font-weight:600;letter-spacing:1px}.page-head .en{font-size:10px;color:var(--ink2);margin-left:2px}
+  .page-head .x{margin-left:auto}
+  .page-body{flex:1;overflow-y:auto;padding:6px 16px 24px}
+  .scr-sub{font-size:11px;color:var(--ink2);margin:-2px 0 14px}
+
+  /* 弹窗 */
+  .mask{position:absolute;inset:0;z-index:50;background:rgba(40,33,22,.5);display:none;align-items:center;justify-content:center;padding:24px}
+  .mask.show{display:flex}
+  .modal{width:100%;max-width:340px;background:radial-gradient(120% 100% at 50% 0%,#fffbf2,#f1e6cf);border:1.5px solid var(--gold);border-radius:18px;padding:18px;position:relative;box-shadow:0 10px 40px rgba(40,33,22,.4)}
+  .modal h3{font-size:16px;color:#6f5a26;font-weight:600;margin-bottom:14px;text-align:center}
+  .mclose{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;border:1px solid var(--gold-soft);background:rgba(255,251,242,.8);display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .mclose svg{width:15px;height:15px;color:var(--ink)}
+  .charlist{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .charcell{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px;border-radius:12px;border:1px solid var(--gold-soft);background:rgba(234,221,191,.5);cursor:pointer}
+  .charcell.on{border:2px solid var(--gold);background:linear-gradient(160deg,#f3e2b8,#e6d0a0)}
+  .charcell .ca{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+  .charcell .ca svg{width:24px;height:24px;color:#fff}
+  .charcell .cn{font-size:13px;color:var(--ink);font-weight:500}.charcell .cd{font-size:10px;color:var(--ink2)}
+  .setrow{display:flex;align-items:center;justify-content:space-between;padding:11px 4px;border-bottom:1px solid var(--gold-soft);font-size:14px;color:var(--ink)}.setrow:last-child{border:none}
+  .reward-ico{width:70px;height:70px;border-radius:14px;margin:0 auto 12px;background:linear-gradient(160deg,#f3e2b8,#e0c386);border:1px solid var(--gold);display:flex;align-items:center;justify-content:center}
+  .reward-ico svg{width:36px;height:36px;color:var(--ink)}
+  .mbtn{display:block;width:100%;margin-top:14px;padding:11px;border-radius:11px;background:linear-gradient(160deg,#f3e2b8,#d8bd80);border:1px solid var(--gold);color:#5a4a1f;font-size:14px;font-weight:600;text-align:center;cursor:pointer}
+
+  .sheet-mask{position:absolute;inset:0;z-index:50;background:rgba(40,33,22,.35);display:none}.sheet-mask.show{display:block}
+  .sheet{position:absolute;left:0;right:0;bottom:0;z-index:51;background:radial-gradient(120% 100% at 50% 0%,#fffbf2,#f1e6cf);border-top:1.5px solid var(--gold);border-radius:20px 20px 0 0;padding:16px 16px 30px;transform:translateY(100%);transition:transform .25s}
+  .sheet.show{transform:translateY(0)}
+  .sheet h3{font-size:14px;color:#6f5a26;text-align:center;margin-bottom:14px;font-weight:600}
+  .sheet-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .sheet-item{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer}
+  .sheet-item .si{width:50px;height:50px;border-radius:50%;border:1.5px solid var(--gold);background:rgba(255,251,242,.8);display:flex;align-items:center;justify-content:center}
+  .sheet-item .si svg{width:24px;height:24px;color:var(--ink)}
+  .sheet-item span{font-size:11px;color:var(--ink)}
+
+  .toast{position:absolute;left:50%;bottom:18%;transform:translateX(-50%) translateY(10px);z-index:60;background:rgba(50,42,28,.92);color:#f3e7cc;font-size:12.5px;padding:9px 16px;border-radius:20px;border:1px solid var(--gold-soft);opacity:0;pointer-events:none;transition:.25s;white-space:nowrap}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- ===== 立绘看板 = 家(根) ===== -->
+  <div class="home">
+    <header class="topbar">
+      <div class="lv" data-modal="profile" title="个人信息/设置"><b>32</b><span>Lv.</span></div>
+      <span class="vip" data-toast="VIP 系统 · 后续开放">VIP</span>
+      <div class="exp"><div class="num">EXP 1850/3200</div><div class="bar"><div class="fill"></div></div></div>
+      <svg class="ann" data-toast="公告 / 活动通知" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 9v6h4l6 4V5L8 9z"/><path d="M17 8a5 5 0 0 1 0 8"/></svg>
+      <div class="cur">
+        <div class="coin"><svg viewBox="0 0 24 24" fill="#c9a24b"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/></svg>28360</div>
+        <div class="coin"><svg viewBox="0 0 24 24" fill="#9a86d8"><path d="M15 3a9 9 0 1 0 6 14 7 7 0 0 1-6-14z"/></svg>15680</div>
+      </div>
+      <div class="capsule" title="微信小游戏胶囊按钮位 · 避让"><span class="cd"></span><span class="cd"></span><span class="cd"></span><span class="cdiv"></span><span class="cc"></span></div>
+    </header>
+
+    <div class="stage">
+      <svg class="astro" viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-width="0.5"><circle cx="100" cy="100" r="95"/><circle cx="100" cy="100" r="78"/><circle cx="100" cy="100" r="60"/><g font-size="7" fill="currentColor" stroke="none" font-family="Georgia,serif"><text x="97" y="14">XII</text><text x="150" y="30">I</text><text x="6" y="78">X</text><text x="40" y="174">VIII</text></g><path d="M70 60 L95 80 L120 70 L140 95 L130 120" stroke="currentColor" stroke-width="0.4" opacity="0.7"/></svg>
+      <div class="glow"></div>
+      <svg class="portrait" viewBox="0 0 200 320" fill="currentColor"><ellipse cx="100" cy="64" rx="46" ry="52"/><path d="M100 116 C58 122 40 165 36 230 C34 270 40 320 40 320 L160 320 C160 320 166 270 164 230 C160 165 142 122 100 116 Z"/></svg>
+      <svg class="feather f1" viewBox="0 0 24 40" fill="#fff"><path d="M12 0 C4 12 2 28 12 40 C22 28 20 12 12 0Z"/></svg>
+      <svg class="feather f2" viewBox="0 0 24 40" fill="#fff"><path d="M12 0 C4 12 2 28 12 40 C22 28 20 12 12 0Z"/></svg>
+      <div class="ratio">1.61803</div>
+      <div class="quote"><div class="l1">你是我命运的</div><div class="l2"><b>唯一变数。</b></div><div class="en">the only variable in my destiny.</div></div>
+    </div>
+    <div class="tap-portrait" data-sheet="portrait"></div>
+    <div class="tap-hint">轻触立绘 · 与<span class="leadName">叶渊</span>互动</div>
+
+    <div class="charsw" data-modal="charsw"><div class="av"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="9" r="4"/><path d="M5 20c0-4 3-6 7-6s7 2 7 6"/></svg></div><span class="t leadName">叶渊</span><span class="sw">⇄</span></div>
+
+    <!-- 左上 低频 -->
+    <nav class="col l">
+      <div class="ico" data-page="diary"><div class="disc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 4h12a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2z"/><path d="M12 8l1 2 2 .3-1.5 1.4.4 2-1.9-1-1.9 1 .4-2L9 10.3 11 10z"/></svg></div><div class="lab">手账</div></div>
+      <div class="ico" data-page="album"><div class="disc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M4 17l5-4 4 3 3-2 4 3"/></svg></div><div class="lab">相册</div></div>
+      <div class="ico" data-page="mailbox"><div class="disc"><div class="dot"></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M4 7l8 6 8-6"/></svg></div><div class="lab">信箱</div></div>
+      <div class="ico" data-page="stella"><div class="disc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="9" r="4"/><path d="M5 20c0-4 3-6 7-6s7 2 7 6"/></svg></div><div class="lab">星灵</div></div>
+    </nav>
+
+    <!-- 右上 高频 -->
+    <nav class="col r">
+      <div class="ico hi" data-page="activity"><div class="disc"><div class="dot"></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/></svg></div><div class="lab">活动</div></div>
+      <div class="ico hi" data-page="agency"><div class="disc"><div class="dot"></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 9l1-5h14l1 5M5 9v11h14V9M5 9h14"/><path d="M9 20v-6h6v6"/></svg></div><div class="lab">事务所</div></div>
+      <div class="ico hi" data-page="daily"><div class="disc"><div class="dot"></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M9 13l2 2 4-4M8 3v3M16 3v3"/></svg></div><div class="lab">每日</div></div>
+      <div class="ico hi" data-page="observe"><div class="disc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></div><div class="lab">观测</div></div>
+      <div class="ico hi" data-page="gifts"><div class="disc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="11" width="16" height="9" rx="1"/><path d="M3 8h18v3H3zM12 8v12"/></svg></div><div class="lab">馈赠</div></div>
+    </nav>
+
+    <!-- 左下 剧情(影视本体) -->
+    <div class="corner left" data-page="story"><div class="elev-line"></div><div class="t">剧情</div><div class="d">无尽电梯 · 继续</div></div>
+
+    <!-- 右下 家园(男主陪伴) -->
+    <div class="corner right" data-page="court"><div class="cdot"></div><div class="t">回响之庭</div><div class="d">陪伴 · 换装 · 布置</div></div>
+  </div>
+
+  <!-- ===== 剧情 ===== -->
+  <section class="page" id="p-story"><div class="page-head"><div class="nav-btn" data-back><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></div><h2>无尽电梯 <span class="en">剧情</span></h2><div class="nav-btn x" data-home><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+    <div class="page-body"><div class="work" data-toast="进入《命运之轮》第三章"><div class="cover"></div><div><h4>命运之轮 · 千年循环</h4><p>第三章 · 暮星城上空的裂隙<br>断点续玩</p><span class="go">继续 →</span></div></div>
+      <div class="panel"><h3>每日 bonus 番外</h3><div class="li hot"><span><span class="pip"></span>今日已更新 · 1-2 分钟</span><span class="r" data-toast="播放今日 bonus">观看</span></div></div>
+      <div class="panel"><h3>作品选择</h3><div class="li"><span>民国百乐门(筹备中)</span><span class="r" data-toast="后续作品逐步解锁">敬请期待</span></div></div></div></section>
+
+  <!-- ===== 活动 ===== -->
+  <section class="page" id="p-activity"><div class="page-head"><div class="nav-btn" data-back><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></div><h2>活动 <span class="en">Events</span></h2><div class="nav-btn x" data-home><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+    <div class="page-body"><div class="work" data-toast="限时活动详情"><div class="cover"></div><div><h4>星陨之约 · 限时</h4><p>登录/任务得限定形态</p><span class="go">前往 →</span></div></div>
+      <div class="panel"><h3>进行中</h3><div class="li"><span>双倍星砂 · 周末</span><span class="r" data-toast="活动详情">查看</span></div><div class="li"><span>新作预热 · 民国百乐门</span><span class="r" data-toast="活动详情">查看</span></div></div></div></section>
+
+  <!-- ===== 家园(回响之庭) ===== -->
+  <section class="page" id="p-court"><div class="page-head"><div class="nav-btn" data-back><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></div><h2>回响之庭 <span class="en">家园</span></h2><div class="nav-btn x" data-home><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+    <div class="page-body"><div class="scr-sub">和男主打交道 · 布置你的庭院</div>
+      <div class="grid2">
+        <div class="gcell feat" data-page="room"><div class="gt">星轨房间</div><div class="gd">男主陪伴/聊天</div></div>
+        <div class="gcell feat" data-page="dressup"><div class="gt">换装</div><div class="gd">男主 + 女主</div></div>
+        <div class="gcell" data-page="decorate"><div class="gt">布置装修</div><div class="gd">家具/庭院</div></div>
+        <div class="gcell" data-page="diary"><div class="gt">记忆书房</div><div class="gd">剧情/记忆收集</div></div>
+        <div class="gcell dark" data-page="arena"><div class="gt">裂隙处理室</div><div class="gd">小游戏竞技</div></div>
+      </div>
+      <div class="muted" style="margin-top:8px">星灵助手在庭内跑动 · 右上工具可进装修模式</div></div></section>
+
+  <!-- ===== 事务所(经营,保留) ===== -->
+  <section class="page" id="p-agency"><div class="page-head"><div class="nav-btn" data-back><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></div><h2>命运事务所 <span class="en">经营</span></h2><div class="nav-btn x" data-home><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+    <div class="page-body"><div class="scr-sub">签到 / 收益 / 委托 / 派遣 / 今日挑战</div>
+      <div class="panel"><h3>每日签到 · 第 5 天</h3><div class="signrow" data-modal="signin"><div class="signcell done"><b>1</b>星砂</div><div class="signcell done"><b>2</b>星砂</div><div class="signcell done"><b>3</b>材料</div><div class="signcell done"><b>4</b>星砂</div><div class="signcell today2"><b>5</b>月辉</div></div></div>
+      <div class="panel"><h3>今日事项</h3><div class="li"><span><span class="pip"></span>挂机收益 · 1240 星砂</span><span class="r" data-modal="reward">领取</span></div><div class="li hot"><span><span class="pip"></span>今日裂隙挑战(小游戏)</span><span class="r" data-page="minigame">去玩 →</span></div></div>
+      <div class="panel"><h3>委托案卷</h3><div class="li"><span>都市委托 · 码头失窃案</span><span class="r" data-toast="派遣男主/助手处理">派遣</span></div><div class="li"><span>心愿委托 · 居民来访</span><span class="r" data-toast="处理心愿委托">处理</span></div><div class="li"><span>高级委托 · 随机刷新</span><span class="r" data-toast="高级委托产月辉碎片">前往</span></div></div>
+      <div class="panel"><h3>星砂工坊 · 资源</h3><div class="li"><span>星砂产出 · 仓库</span><span class="r" data-toast="资源产出明细/仓库">查看</span></div><div class="li"><span>材料合成 · 星砂炉</span><span class="r" data-toast="材料转化合成">合成</span></div></div>
+      <div class="panel"><h3>共鸣台 · 养成</h3><div class="li"><span>形态培养</span><span class="r" data-toast="男主形态培养">前往</span></div><div class="li"><span>小游戏局外加成</span><span class="r" data-toast="局外加成配置">配置</span></div></div></div></section>
+
+  <!-- ===== 每日任务 ===== -->
+  <section class="page" id="p-daily"><div class="page-head"><div class="nav-btn" data-back><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></div><h2>每日 <span class="en">任务/活跃</span></h2><div class="nav-btn x" data-home><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+    <div class="page-body"><div class="panel"><h3>今日活跃度 · 120/120</h3><div class="exp" style="width:100%"><div class="bar"><div class="fill" style="width:100%"></div></div></div></div>
+      <div class="panel"><h3>每日任务</h3><div class="li"><span>推进剧情 1 段</span><span class="r" data-modal="reward">领取</span></div><div class="li"><span>完成 1 局小游戏</span><span class="r" data-page="minigame">去玩</span></div><div class="li"><span>观测 1 次</span><span class="r" data-page="observe">前往</span></div><div class="li"><span>与男主互动 1 次</span><span class="r" data-page="room">前往</span></div></div></div></section>
+
+  <!-- ===== 观测 ===== -->
+  <section class="page" id="p-observe"><div class="page-head"><div class="nav-btn" data-back><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></div><h2>观测 <span class="en">星核穹顶</span></h2><div class="nav-btn x" data-home><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+    <div class="page-body"><div class="gachacard"><h4>本期主池 · 誓约形态</h4><p>心愿定轨：宋以衡 · 誓约</p><div class="gbtns"><div class="b" data-modal="reward">单次观测</div><div class="b x10" data-modal="reward">十次观测</div></div></div>
+      <div class="panel"><div class="li"><span>关键道具兑换</span><span class="r" data-toast="月辉兑换关键道具">前往</span></div><div class="li"><span>概率公示</span><span class="r" data-toast="查看概率公示(合规)">查看</span></div></div><div class="muted">无现金购抽 · 月辉来自游戏行为(合规)</div></div></section>
+
+  <!-- ===== 馈赠 ===== -->
+  <section class="page" id="p-gifts"><div class="page-head"><div class="nav-btn" data-back><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></div><h2>馈赠 <span class="en">Gifts</span></h2><div class="nav-btn x" data-home><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+    <div class="page-body"><div class="panel"><h3>新手 7 日礼包</h3><div class="li hot"><span>第 3 天 · 月辉 ×300</span><span class="r" data-modal="reward">领取</span></div></div><div class="panel"><h3>男主求助 · 低保补给</h3><div class="li"><span>炎烈 · 复活 ×1</span><span class="r" data-toast="观看广告获得复活">观看广告</span></div><div class="muted">无现金购抽，广告仅补给</div></div></div></section>
+
+  <!-- ===== 手账 ===== -->
+  <section class="page" id="p-diary"><div class="page-head"><div class="nav-btn" data-back><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></div><h2>星轨手账 <span class="en">收集册</span></h2><div class="nav-btn x" data-home><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+    <div class="page-body"><div class="panel"><h3>男主记忆碎片 · 12/40</h3><div class="grid2" style="grid-template-columns:repeat(3,1fr)"><div class="gcell" data-toast="记忆：炎烈·初遇"><div class="gt" style="font-size:11px">炎烈·初遇</div></div><div class="gcell" data-toast="记忆：沈寂·契约"><div class="gt" style="font-size:11px">沈寂·契约</div></div><div class="gcell"><div class="gt" style="font-size:11px;color:var(--ink2)">???</div></div><div class="gcell" data-toast="记忆：叶渊·情报"><div class="gt" style="font-size:11px">叶渊·情报</div></div><div class="gcell"><div class="gt" style="font-size:11px;color:var(--ink2)">???</div></div><div class="gcell"><div class="gt" style="font-size:11px;color:var(--ink2)">???</div></div></div></div></div></section>
+
+  <!-- ===== 相册 ===== -->
+  <section class="page" id="p-album"><div class="page-head"><div class="nav-btn" data-back><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></div><h2>相册 <span class="en">拍照/分享</span></h2><div class="nav-btn x" data-home><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+    <div class="page-body"><div class="li hot" style="justify-content:center;margin-bottom:12px"><span class="r" style="padding:8px 20px" data-toast="进入拍照模式(立绘合影)">＋ 拍照合影</span></div>
+      <div class="grid2"><div class="gcell dark" data-toast="查看/分享照片"><div class="gt" style="font-size:11px">叶渊·星夜</div></div><div class="gcell dark" data-toast="查看/分享照片"><div class="gt" style="font-size:11px">炎烈·机车</div></div><div class="gcell" data-toast="战绩卡分享"><div class="gt" style="font-size:11px">战绩卡</div><div class="gd">一键分享</div></div><div class="gcell"><div class="gt" style="font-size:11px;color:var(--ink2)">＋</div></div></div>
+      <div class="muted">拍照 / 战绩卡 → 一键分享到社交</div></div></section>
+
+  <!-- ===== 星灵 ===== -->
+  <section class="page" id="p-stella"><div class="page-head"><div class="nav-btn" data-back><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></div><h2>星灵助手 <span class="en">Stella</span></h2><div class="nav-btn x" data-home><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+    <div class="page-body"><div class="panel"><div class="room-portrait" style="height:80px;width:80px;border-radius:50%;background:radial-gradient(#fff,#e8d6a8)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="9" r="4"/><path d="M5 20c0-4 3-6 7-6s7 2 7 6"/></svg></div><div class="msg him" style="max-width:100%">主人，今天的裂隙告示更新啦~ 要不要去看看？</div></div><div style="text-align:center"><span class="gbtn" data-toast="星灵闲聊(AI 试验田)">随便聊聊</span></div></div></section>
+
+  <!-- ===== 男主房间 ===== -->
+  <section class="page" id="p-room"><div class="page-head"><div class="nav-btn" data-back><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></div><h2>星轨房间 <span class="en">男主陪伴</span></h2><div class="nav-btn x" data-home><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+    <div class="page-body"><div class="room-portrait"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="8" r="4"/><path d="M5 21c0-4 3-7 7-7s7 3 7 7"/></svg></div>
+      <div class="msg him" style="margin:0 auto 14px;max-width:90%">"你来了。今晚的星图，等你很久了。"</div>
+      <div style="text-align:center"><span class="gbtn" data-toast="预置聊天">聊天</span><span class="gbtn" data-page="dressup">换装</span><span class="gbtn" data-toast="心迹/好感">心迹</span><span class="gbtn" data-toast="高甜小剧场">小剧场</span></div></div></section>
+
+  <!-- ===== 换装(男主+女主) ===== -->
+  <section class="page" id="p-dressup"><div class="page-head"><div class="nav-btn" data-back><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></div><h2>换装 <span class="en">Dress Up</span></h2><div class="nav-btn x" data-home><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+    <div class="page-body"><div class="seg"><div class="s on">男主形态</div><div class="s" data-toast="切到女主服装">女主服装</div></div>
+      <div class="dim" style="height:190px"><svg viewBox="0 0 24 24" width="46" height="46" fill="none" stroke="#cdbce8" stroke-width="1.2"><circle cx="12" cy="8" r="4"/><path d="M5 21c0-4 3-7 7-7s7 3 7 7"/></svg><div style="font-size:11px;margin-top:8px">形态预览</div></div>
+      <div class="dress"><div class="d on">基础</div><div class="d" data-toast="切换：回响形态">回响</div><div class="d" data-toast="切换：位面形态">位面</div><div class="d" data-toast="切换：誓约形态">誓约</div><div class="d" style="color:var(--ink2)">未解锁</div><div class="d" style="color:var(--ink2)">未解锁</div></div></div></section>
+
+  <!-- ===== 布置装修 ===== -->
+  <section class="page" id="p-decorate"><div class="page-head"><div class="nav-btn" data-back><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></div><h2>布置装修 <span class="en">庭院</span></h2><div class="nav-btn x" data-home><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+    <div class="page-body"><div class="dim" style="height:160px;background:linear-gradient(160deg,#2a2350,#3a2f5a)"><div style="font-size:11px;color:#cdbce8">庭院场景 · 拖放家具</div></div>
+      <div class="seg"><div class="s on">家具</div><div class="s" data-toast="墙壁/地板">墙地</div><div class="s" data-toast="氛围/光效">氛围</div></div>
+      <div class="dress" style="grid-template-columns:repeat(4,1fr)"><div class="d on">星灯</div><div class="d" data-toast="摆放：书架">书架</div><div class="d" data-toast="摆放：沙发">沙发</div><div class="d" data-toast="摆放：星盘台">星盘台</div></div>
+      <div class="muted" style="margin-top:10px">装修=审美向 · 轻微产出加成(不逼数值)</div></div></section>
+
+  <!-- ===== 裂隙处理室 ===== -->
+  <section class="page" id="p-arena"><div class="page-head"><div class="nav-btn" data-back><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></div><h2>裂隙处理室 <span class="en">竞技场</span></h2><div class="nav-btn x" data-home><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+    <div class="page-body"><div style="margin-bottom:12px"><span class="gbtn" data-toast="爬层挑战">爬层挑战</span><span class="gbtn" data-toast="好友榜">好友榜</span><span class="gbtn" data-toast="纯净榜(公平)">纯净榜</span><span class="gbtn" data-toast="构筑:异象/法则槽">构筑</span></div>
+      <div class="panel"><h3>小游戏</h3><div class="li hot"><span>命运塔台 · 调度</span><a class="r" href="../dispatch/index.html" style="text-decoration:none">进入</a></div><div class="li"><span>缀星 · 合成</span><span class="r" data-page="play">进入</span></div><div class="li"><span>星沙 · 消除</span><span class="r" data-page="play">进入</span></div><div class="li"><span>星轨裁决 · 卡牌</span><span class="r" data-page="play">进入</span></div></div></div></section>
+
+  <!-- ===== 今日挑战 ===== -->
+  <section class="page" id="p-minigame"><div class="page-head"><div class="nav-btn" data-back><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></div><h2>今日裂隙挑战 <span class="en">小游戏</span></h2><div class="nav-btn x" data-home><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+    <div class="page-body"><div class="dim"><div style="display:flex;gap:8px;margin-bottom:12px"><span style="width:24px;height:24px;border-radius:50%;background:#e24b4a"></span><span style="width:30px;height:30px;border-radius:50%;background:#5dbe7a"></span><span style="width:22px;height:22px;border-radius:50%;background:#3c7be0"></span></div><div style="width:78%;height:5px;background:#c9a24b;border-radius:3px"></div><div style="font-size:11px;margin-top:8px">当日轮换：缀星 / 星沙 / 星轨裁决</div></div>
+      <div class="li hot" style="justify-content:center"><a class="r" style="padding:8px 24px;text-decoration:none" href="../dispatch/index.html">开始挑战</a></div></div></section>
+
+  <!-- ===== 对局 ===== -->
+  <section class="page" id="p-play"><div class="page-head"><div class="nav-btn" data-back><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></div><h2>对局中 <span class="en">小游戏</span></h2><div class="nav-btn x" data-home><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+    <div class="page-body"><div class="dim" style="height:280px;background:linear-gradient(160deg,#211d3a,#0a0f24)"><div style="font-size:11px;color:#e8dfc0">(接真实小游戏 demo)</div><div style="margin-top:14px"><span style="width:26px;height:26px;border-radius:50%;background:#e24b4a;display:inline-block;margin:0 4px"></span><span style="width:34px;height:34px;border-radius:50%;background:#5dbe7a;display:inline-block;margin:0 4px"></span><span style="width:22px;height:22px;border-radius:50%;background:#3c7be0;display:inline-block;margin:0 4px"></span></div></div>
+      <div class="li hot" style="justify-content:center"><span class="r" style="padding:8px 24px" data-back>结束对局 · 返回</span></div></div></section>
+
+  <!-- ===== 弹窗 ===== -->
+  <div class="mask" id="m-profile"><div class="modal"><div class="mclose" data-mclose><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div><h3>个人信息</h3><div class="setrow"><span>星辉见证者 · Lv.32</span><span style="color:var(--ink2)">UID 03210064</span></div><div class="setrow" data-toast="成就系统 · 12/60"><span>成就</span><span style="color:var(--gold2)">12/60 ›</span></div><div class="setrow" data-toast="好友 / 社交"><span>好友</span><span style="color:var(--gold2)">›</span></div><div class="setrow" data-toast="设置:音乐/音效/画质"><span>设置</span><span style="color:var(--gold2)">›</span></div><div class="setrow" data-toast="客服 / 问卷"><span>客服 · 问卷</span><span style="color:var(--gold2)">›</span></div><div class="setrow"><span>VIP</span><span style="color:var(--ink2)">后续开放</span></div></div></div>
+
+  <div class="mask" id="m-signin"><div class="modal"><div class="mclose" data-mclose><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div><h3>每日签到 · 第 5 天</h3><div class="signrow"><div class="signcell done"><b>3</b>材料</div><div class="signcell done"><b>4</b>星砂</div><div class="signcell today2"><b>5</b>月辉</div><div class="signcell"><b>6</b>星砂</div></div><div class="mbtn" data-modal="reward">签到领取 月辉 ×50</div></div></div>
+
+  <div class="mask" id="m-reward"><div class="modal" style="text-align:center"><div class="mclose" data-mclose><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div><h3>获得奖励</h3><div class="reward-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/></svg></div><div style="font-size:14px;color:var(--ink)">星砂 ×1240 · 月辉 ×50</div><div class="mbtn" data-mclose>确认</div></div></div>
+
+  <div class="mask" id="m-charsw"><div class="modal"><div class="mclose" data-mclose><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div><h3>切换当前陪伴</h3><div class="charlist">
+    <div class="charcell" data-lead="炎烈"><div class="ca" style="background:#e24b4a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M5 21c0-4 3-7 7-7s7 3 7 7"/></svg></div><div class="cn">炎烈</div><div class="cd">权杖·机车</div></div>
+    <div class="charcell" data-lead="沈寂"><div class="ca" style="background:#d8923a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M5 21c0-4 3-7 7-7s7 3 7 7"/></svg></div><div class="cn">沈寂</div><div class="cd">星币·总裁</div></div>
+    <div class="charcell on" data-lead="叶渊"><div class="ca" style="background:#5dbe7a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M5 21c0-4 3-7 7-7s7 3 7 7"/></svg></div><div class="cn">叶渊</div><div class="cd">宝剑·雅痞</div></div>
+    <div class="charcell" data-lead="宋以衡"><div class="ca" style="background:#4a7bff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M5 21c0-4 3-7 7-7s7 3 7 7"/></svg></div><div class="cn">宋以衡</div><div class="cd">圣杯·教授</div></div>
+  </div></div></div>
+
+  <div class="sheet-mask" id="sheet-mask"></div>
+  <div class="sheet" id="sheet-portrait"><h3>与 <span class="leadName">叶渊</span> 互动</h3><div class="sheet-grid">
+    <div class="sheet-item" data-page="room"><div class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5h16v11H8l-4 4z"/></svg></div><span>聊天</span></div>
+    <div class="sheet-item" data-page="dressup"><div class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 4l4 3 4-3 4 4-3 3v9H7v-9L4 8z"/></svg></div><span>换装</span></div>
+    <div class="sheet-item" data-toast="心迹/好感"><div class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/></svg></div><span>心迹</span></div>
+    <div class="sheet-item" data-toast="高甜小剧场"><div class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 4h14v16l-7-3-7 3z"/></svg></div><span>小剧场</span></div>
+  </div></div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+(function(){
+  var app=document.getElementById('app');
+  var toast=document.getElementById('toast'),tt;
+  var pageStack=[], modalOpen=null, sheetOpen=false;
+  function showToast(m){toast.textContent=m;toast.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){toast.classList.remove('show')},1500);}
+  function renderPages(){app.querySelectorAll('.page').forEach(function(p){p.classList.remove('show');});if(pageStack.length){var t=document.getElementById('p-'+pageStack[pageStack.length-1]);if(t){t.classList.add('show');t.querySelector('.page-body').scrollTop=0;}}}
+  function openPage(id){closeSheet();pageStack.push(id);renderPages();}
+  function back(){if(modalOpen){closeModal();return;}if(sheetOpen){closeSheet();return;}if(pageStack.length){pageStack.pop();renderPages();}}
+  function goHome(){closeModal();closeSheet();pageStack=[];renderPages();}
+  function openModal(id){var m=document.getElementById('m-'+id);if(m){m.classList.add('show');modalOpen=id;}}
+  function closeModal(){if(modalOpen){var m=document.getElementById('m-'+modalOpen);if(m)m.classList.remove('show');modalOpen=null;}}
+  function openSheet(){document.getElementById('sheet-mask').classList.add('show');document.getElementById('sheet-portrait').classList.add('show');sheetOpen=true;}
+  function closeSheet(){document.getElementById('sheet-mask').classList.remove('show');document.getElementById('sheet-portrait').classList.remove('show');sheetOpen=false;}
+  app.addEventListener('click',function(e){
+    if(e.target.closest('[data-home]')){goHome();return;}
+    if(e.target.closest('[data-back]')){back();return;}
+    if(e.target.closest('[data-mclose]')){closeModal();return;}
+    if(e.target.id==='sheet-mask'){closeSheet();return;}
+    if(e.target.closest('.mask')&&!e.target.closest('.modal')){closeModal();return;}
+    var lead=e.target.closest('[data-lead]');if(lead){var n=lead.dataset.lead;app.querySelectorAll('.leadName').forEach(function(el){el.textContent=n;});app.querySelectorAll('#m-charsw .charcell').forEach(function(c){c.classList.toggle('on',c.dataset.lead===n);});closeModal();showToast('当前陪伴已切换为 '+n);return;}
+    var mo=e.target.closest('[data-modal]');if(mo){openModal(mo.dataset.modal);return;}
+    var sh=e.target.closest('[data-sheet]');if(sh){openSheet();return;}
+    var pg=e.target.closest('[data-page]');if(pg){openPage(pg.dataset.page);return;}
+    var to=e.target.closest('[data-toast]');if(to){showToast(to.dataset.toast);return;}
+  });
+})();
+</script>
+</body>
+</html>

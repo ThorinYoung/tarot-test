@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#caefe8">
+<title>拆钉拼豆 · 梦幻 MVP</title>
+<link rel="stylesheet" href="screw-beads.css?v=031">
+</head>
+<body>
+<canvas id="backdrop" aria-hidden="true"></canvas>
+
+<div class="app" id="app">
+  <header class="hud">
+    <div class="hud-main">
+      <div class="brand">
+        <span class="brand-mark"></span>
+        <div>
+          <div class="brand-name">拆钉拼豆</div>
+          <div class="brand-sub" id="levelName">MVP</div>
+        </div>
+      </div>
+      <div class="hud-actions">
+        <button class="icon-btn" id="btnPrev" title="上一关" aria-label="上一关">‹</button>
+        <button class="icon-btn" id="btnReset" title="重开本关" aria-label="重开本关">↻</button>
+        <button class="icon-btn" id="btnNext" title="下一关" aria-label="下一关">›</button>
+      </div>
+    </div>
+    <div class="hud-stats">
+      <div class="stat-chip" id="modeChip">手动</div>
+      <div class="stat-chip"><span id="moveNow">0</span> 钉</div>
+      <div class="stat-chip">盘 <span id="trayNow">0</span>/<span id="trayMax">0</span></div>
+    </div>
+  </header>
+
+  <main class="playfield" id="playfield">
+    <section class="goal-panel" aria-label="目标">
+      <div class="panel-head">
+        <span>今日拼豆目标</span>
+        <span id="goalDone">0/0</span>
+      </div>
+      <div class="goal-list" id="goalList"></div>
+    </section>
+
+    <section class="machine" id="machine" aria-label="拆钉区">
+      <div class="moon-plate"></div>
+      <div class="piece-layer" id="pieceLayer"></div>
+      <div class="screw-layer" id="screwLayer"></div>
+      <div class="drop-layer" id="dropLayer"></div>
+    </section>
+
+    <section class="tray-panel" aria-label="拼豆盘">
+      <div class="tray-head">
+        <div>
+          <div class="tray-title">拼豆盘</div>
+          <div class="tray-sub">按图案收集三同色豆片</div>
+        </div>
+        <span id="trayState">0/0</span>
+      </div>
+      <div class="tray-shell">
+        <div class="tray-pattern" id="trayPattern" aria-hidden="true"></div>
+        <div class="tray" id="tray"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="status-bar">
+    <div class="status-text" id="statusText">准备中</div>
+    <button class="next-level" id="btnAdvance">下一关</button>
+  </footer>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal"></div>
+</div>
+
+<script src="screw-beads.js?v=031"></script>
+</body>
+</html>

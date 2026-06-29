@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0e2a">
+<title>星盘影游 · 玩法擂台</title>
+<style>
+  :root{
+    --ink:#0a0e2a; --ink2:#121736; --deep:#1a1f4a;
+    --gold:#e8c878; --gold2:#f4dd9a; --gold-dim:#bfa05a;
+    --violet:#9a7be0; --violet-glow:#7b5cd6;
+    --text:#ede6d8; --text-dim:#a7a3bd;
+    --wand:#e8915a; --coin:#e8c878; --sword:#7fa8d8; --cup:#c98ad8;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  html,body{background:var(--ink); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(122,92,214,.28), transparent 60%),
+      radial-gradient(800px 500px at 80% 110%, rgba(232,200,120,.10), transparent 55%),
+      linear-gradient(180deg, #0a0e2a 0%, #0c1030 40%, #080b22 100%);
+    background-attachment:fixed;
+    padding:max(28px,env(safe-area-inset-top)) 18px 48px;
+    position:relative; overflow-x:hidden;
+  }
+  /* 星点 */
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image:
+      radial-gradient(1.4px 1.4px at 12% 18%, #fff, transparent),
+      radial-gradient(1.2px 1.2px at 78% 12%, #fff, transparent),
+      radial-gradient(1px 1px at 35% 42%, #cfd6ff, transparent),
+      radial-gradient(1.6px 1.6px at 88% 60%, #fff, transparent),
+      radial-gradient(1px 1px at 22% 72%, #e8c878, transparent),
+      radial-gradient(1.2px 1.2px at 62% 84%, #fff, transparent),
+      radial-gradient(1px 1px at 50% 25%, #cfd6ff, transparent);
+    opacity:.55;
+  }
+  .wrap{max-width:560px; margin:0 auto; position:relative; z-index:1;}
+
+  header{text-align:center; padding:18px 0 26px;}
+  .crest{
+    width:60px; height:60px; margin:0 auto 14px; border-radius:50%;
+    background:radial-gradient(circle at 50% 38%, var(--gold2), var(--gold-dim) 70%, #6b5326);
+    box-shadow:0 0 0 2px rgba(232,200,120,.35), 0 0 26px rgba(232,200,120,.45), inset 0 -4px 10px rgba(0,0,0,.4);
+    display:flex; align-items:center; justify-content:center; font-size:30px;
+  }
+  h1{
+    font-size:25px; letter-spacing:.32em; font-weight:700; text-indent:.32em;
+    background:linear-gradient(180deg,var(--gold2),var(--gold) 55%,var(--gold-dim));
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 1px 8px rgba(232,200,120,.35));
+  }
+  .sub{margin-top:10px; font-size:12.5px; color:var(--text-dim); letter-spacing:.18em;}
+  .divider{
+    width:160px; height:1px; margin:18px auto 4px;
+    background:linear-gradient(90deg,transparent,var(--gold),transparent); opacity:.6;
+  }
+
+  .section-label{
+    font-size:11px; letter-spacing:.3em; color:var(--gold-dim);
+    margin:26px 4px 12px; display:flex; align-items:center; gap:10px;
+  }
+  .section-label::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,rgba(232,200,120,.4),transparent);}
+
+  .cards{display:flex; flex-direction:column; gap:13px;}
+  a.card{
+    display:block; text-decoration:none; color:inherit;
+    background:linear-gradient(160deg, rgba(26,31,74,.78), rgba(12,16,42,.85));
+    border:1px solid rgba(232,200,120,.20);
+    border-radius:16px; padding:16px 17px; position:relative; overflow:hidden;
+    transition:transform .14s ease, border-color .2s, box-shadow .2s;
+    box-shadow:0 6px 20px rgba(0,0,0,.32);
+  }
+  a.card:active{transform:scale(.985);}
+  a.card::before{
+    content:""; position:absolute; left:0; top:0; bottom:0; width:4px;
+    background:var(--accent,var(--gold));
+    box-shadow:0 0 14px var(--accent,var(--gold));
+  }
+  a.card:hover{border-color:rgba(232,200,120,.5); box-shadow:0 8px 28px rgba(122,92,214,.25);}
+  .card-top{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;}
+  .card-name{font-size:18px; font-weight:700; letter-spacing:.08em; color:var(--gold2);}
+  .card-tag{
+    font-size:10.5px; letter-spacing:.12em; color:var(--text-dim);
+    border:1px solid rgba(167,163,189,.3); border-radius:20px; padding:2px 9px;
+  }
+  .card-desc{margin-top:8px; font-size:13px; line-height:1.65; color:var(--text-dim);}
+  .card-go{
+    margin-top:10px; font-size:11.5px; letter-spacing:.14em; color:var(--gold);
+    display:flex; align-items:center; gap:5px;
+  }
+  .card-go::after{content:"→"; transition:transform .2s;}
+  a.card:hover .card-go::after{transform:translateX(4px);}
+
+  .new-badge{
+    font-size:9.5px; letter-spacing:.1em; color:#0a0e2a; font-weight:700;
+    background:linear-gradient(180deg,var(--gold2),var(--gold-dim));
+    border-radius:20px; padding:2px 8px; margin-left:auto;
+  }
+
+  footer{margin-top:38px; text-align:center; font-size:11px; color:var(--text-dim); letter-spacing:.1em; line-height:1.9;}
+  footer .tip{color:var(--gold-dim);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="crest">✦</div>
+    <h1>玩法擂台</h1>
+    <div class="sub">星盘影游 · 内部试玩 · 竖屏体验最佳</div>
+    <div class="divider"></div>
+  </header>
+
+  <div class="section-label">核心候选 · 6 款</div>
+  <div class="cards">
+
+    <a class="card" href="index.html" style="--accent:var(--sword)">
+      <div class="card-top">
+        <span class="card-name">星轨裁决</span>
+        <span class="card-tag">卡牌 · 爬层 Roguelike</span>
+      </div>
+      <div class="card-desc">塔罗印记牌阵 × Balatro 式底分倍率,缝合星轨累积共鸣、逐层爬塔。四花色绑四男主色相。最完整(v0.4)。</div>
+      <div class="card-go">进入试玩</div>
+    </a>
+
+    <a class="card" href="sand/index.html" style="--accent:var(--coin)">
+      <div class="card-top">
+        <span class="card-name">星沙</span>
+        <span class="card-tag">消除 · 流沙贯通</span>
+      </div>
+      <div class="card-desc">同色流沙倾落,自最左贯通到最右整条溃散。含爽点预警光带 + 男主星力 + 今夜星河偏色共鸣。已开 Cocos 渲染验证。</div>
+      <div class="card-go">进入试玩</div>
+    </a>
+
+    <a class="card" href="merge/index.html" style="--accent:var(--wand)">
+      <div class="card-top">
+        <span class="card-name">缀星</span>
+        <span class="card-tag">合成 · 物理坠落</span>
+      </div>
+      <div class="card-desc">星辰坠落、同阶相触合成进阶,合成大西瓜式手感。护城河:男主星力 × 为他缀星唤回记忆。</div>
+      <div class="card-go">进入试玩</div>
+    </a>
+
+    <a class="card" href="dispatch/index.html" style="--accent:var(--violet)">
+      <div class="card-top">
+        <span class="card-name">命运航线</span>
+        <span class="card-tag">调度 · 可视化</span>
+        <span class="new-badge">NEW</span>
+      </div>
+      <div class="card-desc">可视化命运调度玩法(最新探索方向)。</div>
+      <div class="card-go">进入试玩</div>
+    </a>
+
+    <a class="card" href="flower/index.html" style="--accent:var(--cup)">
+      <div class="card-top">
+        <span class="card-name">星盘花园 · 合成花</span>
+        <span class="card-tag">合成 · 情结之花</span>
+        <span class="new-badge">NEW</span>
+      </div>
+      <div class="card-desc">以花为题的合成玩法变体(最新探索方向)。</div>
+      <div class="card-go">进入试玩</div>
+    </a>
+
+    <a class="card" href="screw-beads/index.html" style="--accent:var(--gold)">
+      <div class="card-top">
+        <span class="card-name">拆钉拼豆</span>
+        <span class="card-tag">解压 · 拧珠</span>
+        <span class="new-badge">NEW</span>
+      </div>
+      <div class="card-desc">拆钉、归色、拼豆的梦幻解压玩法(最新探索方向)。</div>
+      <div class="card-go">进入试玩</div>
+    </a>
+
+  </div>
+
+  <div class="section-label">界面原型 · 非玩法</div>
+  <div class="cards">
+    <a class="card" href="home/index.html" style="--accent:var(--violet)">
+      <div class="card-top">
+        <span class="card-name">主界面原型</span>
+        <span class="card-tag">乙游 UI · 立绘看板</span>
+      </div>
+      <div class="card-desc">女频乙游主界面交互范式原型(立绘看板 + 功能页),非玩法 demo。</div>
+      <div class="card-go">查看原型</div>
+    </a>
+  </div>
+
+  <footer>
+    <div class="tip">✦ 每款均为内部手感测试版,数值未调优 ✦</div>
+    <div>深空塔罗 · 星辉鎏金</div>
+  </footer>
+</div>
+</body>
+</html>

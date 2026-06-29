@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#100e16">
 <title>命运航线 · 可视化调度 Demo</title>
-<link rel="stylesheet" href="dispatch.css?v=301">
+<link rel="stylesheet" href="dispatch.css?v=304">
 </head>
 <body>
 <canvas id="sky" aria-hidden="true"></canvas>
@@ -30,7 +30,14 @@
 
   <section class="stage-wrap" aria-label="命运航线调度区">
     <canvas id="stage"></canvas>
-    <div class="stage-hint" id="stageHint">拖住彩色危机信号,画线送到同色男主锚点</div>
+    <div class="level-strip" aria-label="当前关卡">
+      <div class="level-row">
+        <span id="levelName">第1幕 · 试航</span>
+        <b id="levelRule">2线慢速</b>
+      </div>
+      <div class="level-meter"><i id="levelMeter"></i></div>
+    </div>
+    <div class="stage-hint" id="stageHint">拖动危机牌,画航线接入同色男主锚点</div>
   </section>
 
   <section class="log-panel" aria-label="剧情回响">
@@ -52,6 +59,6 @@
   <div class="modal" id="modal"></div>
 </div>
 
-<script src="dispatch.js?v=306"></script>
+<script src="dispatch.js?v=309"></script>
 </body>
 </html>

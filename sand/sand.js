@@ -18,17 +18,17 @@ const SUIT_IDX = { wand: 1, coin: 2, sword: 3, cup: 4 };
 const IDX_SUIT = [null, "wand", "coin", "sword", "cup"];
 
 const LEADS = {
-  wand: { name: "炎烈", glyph: "#glyph-wand", color: "#ff4d2e",
+  wand: { name: "江驰野", glyph: "#glyph-wand", color: "#ff4d2e", portrait: "../assets/characters/sand/wand-portrait.jpg", cutin: "../assets/characters/sand/wand-cutin.jpg",
     lines: { start: ["今天的沙,看着就欠烧。", "跟上我的节奏,别眨眼。"], clear: ["散得漂亮!", "就是这一片!"], chain: ["连着来,别停!", "这股势头我喜欢!"], big: ["满屏都烧亮了——这才像话!", "看见没,你把我点燃了。"], low: ["沙要漫上来了——稳住。", "越挤越要沉住气。"], rescue: ["谁准你放弃的?手给我。", "塌不了,有我。"], win: ["赢了!刚才那下是不是很帅?", "干脆利落。"] } },
-  coin: { name: "沈寂", glyph: "#glyph-coin", color: "#ffd21f",
+  coin: { name: "沈寂", glyph: "#glyph-coin", color: "#ffd21f", portrait: "../assets/characters/sand/coin-portrait.jpg", cutin: "../assets/characters/sand/coin-cutin.jpg",
     lines: { start: ["按计划进行,很好。", "每一粒沙都别浪费。"], clear: ["入账。", "稳,继续。"], chain: ["连锁收益,可观。", "复利的美。"], big: ["这一片,值一整座城的安眠。", "收益超预期。"], low: ["余量告急,冷静核算。", "越到最后越别乱。"], rescue: ["亏损止得住,手伸出来。", "追加预算,别浪费。"], win: ["结算完成,超预期。", "记进年报。"] } },
-  sword: { name: "叶渊", glyph: "#glyph-sword", color: "#15d683",
+  sword: { name: "叶渊", glyph: "#glyph-sword", color: "#15d683", portrait: "../assets/characters/sand/sword-portrait.jpg", cutin: "../assets/characters/sand/sword-cutin.jpg",
     lines: { start: ["情报核对完毕,开始吧。", "别紧张,照我说的做。"], clear: ["最优解。", "我就说你会倒这儿。"], chain: ["连起来了,你总比我预测的好。", "漂亮,这步我没算到。"], big: ["整片溃散——教科书级别。", "我就说你做得到。"], low: ["空间告急,我替你算。", "收线,信你的直觉。"], rescue: ["想都别想输,抓紧我。", "预案启动,够你翻盘。"], win: ["完美收束,误差为零。", "看吧。"] } },
-  cup: { name: "宋以衡", glyph: "#glyph-cup", color: "#4a7bff",
+  cup: { name: "宋以衡", glyph: "#glyph-cup", color: "#4a7bff", portrait: "../assets/characters/sand/cup-portrait.jpg", cutin: "../assets/characters/sand/cup-cutin.jpg",
     lines: { start: ["别紧张,我陪你。", "今晚的星沙,很适合你。"], clear: ["唤回来一点了……", "很温柔,也很正确。"], chain: ["星光都在偏爱你。", "这个节奏,很舒服。"], big: ["你看,他的星河……整片亮起来了。", "一整片,都被你唤回来了。"], low: ["深呼吸,我陪你。", "你已经很好了。"], rescue: ["我在,手给我。", "靠着我,慢慢来。"], win: ["辛苦了……今天也想被你夸夸。", "回去喝杯热的。"] } },
 };
 const SYS = { name: "AI 灵宝", glyph: "#glyph-octa", color: "#d8b46a" };
-const POWER_NAME = { wand: "烈焰贯通", coin: "沈压固守", sword: "罡风归拢", cup: "潮汐冲刷" };   /* P1 四男主星力名(换男主=换破局方式) */
+const POWER_NAME = { wand: "驰焰贯通", coin: "沈压固守", sword: "罡风归拢", cup: "潮汐冲刷" };   /* P1 四男主星力名(换男主=换破局方式) */
 
 const LAWS = [
   { key: "lovers", name: "恋人", icon: "#glyph-cup", rar: "l", desc: "圣杯星沙溃散缝合 ×1.5" },
@@ -53,7 +53,7 @@ const MEMORIES = {
 };
 /* P1 今夜星河·偏色共鸣(对标缀星世界牌四元素 docs/17):一局溃散各色占比 → 偏色潮/星河长明/四相圆满 */
 const ELEMENTS = {
-  wand: { el: "火", tide: "炎之潮", lead: "炎烈" },
+  wand: { el: "火", tide: "炎之潮", lead: "江驰野" },
   coin: { el: "土", tide: "磐之潮", lead: "沈寂" },
   sword: { el: "风", tide: "罡之潮", lead: "叶渊" },
   cup: { el: "水", tide: "汐之潮", lead: "宋以衡" },
@@ -185,22 +185,35 @@ function modal(h) { $("modal").innerHTML = h; $("overlay").classList.add("show")
 function closeModal() { $("overlay").classList.remove("show"); }
 function flash(red) { let f = document.querySelector(".screen-flash"); if (!f) { f = document.createElement("div"); f.className = "screen-flash"; document.body.appendChild(f); } f.classList.toggle("red", !!red); f.classList.remove("go"); void f.offsetWidth; f.classList.add("go"); }
 function flyScore(x, y, txt, size = 18) { const e = document.createElement("div"); e.className = "fly-score"; e.textContent = txt; e.style.cssText = `left:${x}px;top:${y}px;font-size:${size}px;transform:translateX(-50%)`; document.body.appendChild(e); setTimeout(() => e.remove(), 880); }
+function portraitOf(suit) { return (LEADS[suit] || LEADS.sword).portrait || LEADS.sword.portrait; }
+function setImgSrc(img, src) { if (img && src && !img.src.endsWith(src.replace("../", ""))) img.src = src; }
+function setLeadPortrait(suit) { setImgSrc($("leadPortrait"), portraitOf(suit)); }
+function preloadCharacterAssets() {
+  Object.values(LEADS).forEach((lead) => [lead.portrait, lead.cutin].forEach((src) => { if (src) { const img = new Image(); img.src = src; } }));
+}
 
 let lastSay = 0;
 function say(suit, kind, force = false) {
   const l = LEADS[suit]; if (!l) return;
   const now = performance.now(); if (!force && now - lastSay < 3800) return; lastSay = now;
   $("leadGlyph").setAttribute("href", l.glyph); $("leadAvatar").style.color = l.color; $("lbName").textContent = l.name;
+  setLeadPortrait(suit);
   syncCharacter(suit, true);
   const t = $("lbText"); t.textContent = pick(l.lines[kind] || ["…"]); t.classList.remove("pop"); void t.offsetWidth; t.classList.add("pop");
   const a = $("leadAvatar"); a.classList.remove("flash"); void a.offsetWidth; a.classList.add("flash");
 }
-function setLeadBar(suit) { const l = LEADS[suit] || LEADS.sword; $("leadGlyph").setAttribute("href", l.glyph); $("leadAvatar").style.color = l.color; $("lbName").textContent = l.name; $("lbText").textContent = pick(l.lines.start); syncCharacter(suit, false); }
+function setLeadBar(suit) {
+  const l = LEADS[suit] || LEADS.sword;
+  $("leadGlyph").setAttribute("href", l.glyph); $("leadAvatar").style.color = l.color; $("lbName").textContent = l.name; $("lbText").textContent = pick(l.lines.start);
+  setLeadPortrait(suit); syncCharacter(suit, false);
+}
 function syncCharacter(suit, pop = false) {
   const L = LEADS[suit] || LEADS.sword;
   const c = $("characterCameo");
   if (!c) return;
   c.style.color = L.color;
+  c.style.setProperty("--lead-color", L.color);
+  setImgSrc(c.querySelector(".character-cameo__portrait img"), portraitOf(suit));
   const use = c.querySelector(".cameo-suit use");
   if (use) use.setAttribute("href", L.glyph || "#glyph-octa");
   if (pop) { c.classList.remove("speak"); void c.offsetWidth; c.classList.add("speak"); }
@@ -212,6 +225,7 @@ function runDialogue(seq) {
     function show() {
       const [who, text] = seq[i]; const w = who === "sys" ? SYS : LEADS[who];
       $("dlgAvatar").classList.toggle("is-sys", who === "sys");
+      if (who !== "sys") setImgSrc(document.querySelector(".dlg-portrait"), portraitOf(who));
       $("dlgGlyph").setAttribute("href", w.glyph); $("dlgAvatar").style.color = w.color; $("dlgName").textContent = w.name;
       const t = $("dlgText"); t.textContent = ""; typing = true; let c = 0;
       timer = setInterval(() => { c++; t.textContent = text.slice(0, c); if (c >= text.length) { clearInterval(timer); typing = false; } }, 24);
@@ -395,15 +409,15 @@ async function onStarPower() {
   const duty = S.duty || dutyLead();
   flash(); say(duty, "big", true);
   banner("✦ " + LEADS[duty].name + " · " + POWER_NAME[duty] + " ✦");
-  if (duty === "wand") await powerYanlie();
+  if (duty === "wand") await powerJiangchiye();
   else if (duty === "coin") await powerShenji();
   else if (duty === "sword") await powerYeyuan();
   else await powerSongyiheng();
   S.clearAcc = CLEAR_SCAN_MS;   /* 星力后立即扫一次,溃散即时兑现 */
   S.busy = false; updatePowerUI();
 }
-/* 炎烈·烈焰贯通:选沙最满的一行烧成权杖整条 → 立即横贯溃散(暴力爆发) */
-async function powerYanlie() {
+/* 江驰野·驰焰贯通:选沙最满的一行烧成权杖整条 → 立即横贯溃散(暴力爆发) */
+async function powerJiangchiye() {
   let bestR = GH - 2, bestN = -1;
   for (let r = GH - 1; r >= WARN_ROW; r--) { let n = 0; for (let c = 0; c < GW; c++) if (S.grid[idx(r, c)]) n++; if (n >= bestN) { bestN = n; bestR = r; } }
   for (let c = 0; c < GW; c++) { S.grid[idx(bestR, c)] = SUIT_IDX.wand; S.shade[idx(bestR, c)] = 1; }
@@ -1284,4 +1298,4 @@ function bindUI() {
 }
 
 /* ===================== 启动 ===================== */
-initColors(); layoutCanvas(); bindUI(); showTitle();
+initColors(); preloadCharacterAssets(); layoutCanvas(); bindUI(); showTitle();

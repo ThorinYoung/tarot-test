@@ -20,6 +20,8 @@ const BOUQUETS = [
   { name: "蓝白告白", bonus: 180, req: [[1, 1], [4, 1]] },
   { name: "午后花篮", bonus: 220, req: [[3, 1], [5, 1]] },
   { name: "晴日纪念", bonus: 320, req: [[4, 1], [6, 1]] },
+  { name: "晨间小束", bonus: 55, req: [[1, 1]] },
+  { name: "白花试作", bonus: 70, req: [[2, 1]] },
 ];
 
 const FLOWER_LANG = [
@@ -28,7 +30,80 @@ const FLOWER_LANG = [
   { name: "晴日花园", tiers: [3, 6], score: 180, color: "#e9b743", clearTiny: true },
 ];
 
-const GOAL_BOUQUETS = 5;
+const LEADS = [
+  { id: "song", name: "宋以衡", img: "assets/song-yiheng.png", accent: "#8fa6bd", pos: "18% 30%" },
+  { id: "jiang", name: "江驰野", img: "assets/jiang-chiye.jpg", accent: "#b84b46", pos: "19% 34%" },
+  { id: "ye", name: "叶渊", img: "assets/ye-yuan.jpg", accent: "#4e75a6", pos: "19% 34%" },
+  { id: "shen", name: "沈寂", img: "assets/shen-ji.png", accent: "#9a7a61", pos: "19% 32%" },
+];
+
+const SPECIAL_ORDERS = [
+  {
+    special: true,
+    key: "song-night",
+    leadId: "song",
+    name: "宋以衡的夜班花束",
+    tag: "问诊来信",
+    line: "他想把值班室的灯光调得柔一点。",
+    doneLine: "宋以衡收下花束，留给你一只备用喷壶。",
+    bonus: 155,
+    req: [[1, 1], [2, 1]],
+    reward: { spray: 1, score: 30 },
+    minLevel: 0,
+  },
+  {
+    special: true,
+    key: "jiang-finish",
+    leadId: "jiang",
+    name: "江驰野的终点花束",
+    tag: "赛后邀约",
+    line: "他把领奖台旁的位置空了出来。",
+    doneLine: "江驰野朝你扬了扬下巴，接下来短时间得分更高。",
+    bonus: 190,
+    req: [[1, 2], [3, 1]],
+    reward: { boost: 8000, score: 45 },
+    minLevel: 1,
+  },
+  {
+    special: true,
+    key: "ye-midnight",
+    leadId: "ye",
+    name: "叶渊的夜蓝花礼",
+    tag: "午夜短信",
+    line: "他只发来一句：蓝色的就好。",
+    doneLine: "叶渊把花放在窗边，顺手替你清开了小花。",
+    bonus: 230,
+    req: [[2, 1], [4, 1]],
+    reward: { clearTiny: true, score: 60 },
+    minLevel: 2,
+  },
+  {
+    special: true,
+    key: "shen-study",
+    leadId: "shen",
+    name: "沈寂的书房花礼",
+    tag: "旧日便笺",
+    line: "他在书页里夹了一张只写给你的纸条。",
+    doneLine: "沈寂合上书，把修枝铲轻轻推到你手边。",
+    bonus: 260,
+    req: [[3, 1], [5, 1]],
+    reward: { spade: 1, score: 70 },
+    minLevel: 3,
+  },
+];
+
+const LEVELS = [
+  { name: "初恋花园", goalBouquets: 3, targetScore: 320, comboGoal: 2, maxTierGoal: 2, spawnTier1Rate: 0.22, spray: 1, spade: 1, overloadMs: 2400, orderPool: [5, 6, 0], orderStages: [[5, 5, 6], [5, 6, 0], [6, 0, 0]] },
+  { name: "云边练习", goalBouquets: 4, targetScore: 560, comboGoal: 2, maxTierGoal: 3, spawnTier1Rate: 0.25, spray: 1, spade: 1, overloadMs: 2300, orderPool: [5, 6, 0, 1], orderStages: [[5, 6, 0], [6, 0, 1], [0, 1, 1]] },
+  { name: "蓝白信笺", goalBouquets: 4, targetScore: 760, comboGoal: 3, maxTierGoal: 4, spawnTier1Rate: 0.28, spray: 1, spade: 1, overloadMs: 2200, orderPool: [0, 1, 2], orderStages: [[0, 0, 1], [0, 1, 2], [1, 2, 2]] },
+  { name: "午后花篮", goalBouquets: 5, targetScore: 1050, comboGoal: 3, maxTierGoal: 4, spawnTier1Rate: 0.3, spray: 1, spade: 1, overloadMs: 2150, orderPool: [1, 2, 3], orderStages: [[1, 1, 2], [1, 2, 3], [2, 3, 3]] },
+  { name: "晴日纪念", goalBouquets: 5, targetScore: 1350, comboGoal: 4, maxTierGoal: 5, spawnTier1Rate: 0.31, spray: 1, spade: 1, overloadMs: 2100, orderPool: [1, 2, 3, 4], orderStages: [[1, 2, 2], [2, 3, 4], [3, 4, 4]] },
+  { name: "花架加急", goalBouquets: 6, targetScore: 1700, comboGoal: 4, maxTierGoal: 5, spawnTier1Rate: 0.33, spray: 1, spade: 0, overloadMs: 2050, orderPool: [1, 2, 3, 4], orderStages: [[1, 2, 3], [2, 3, 4], [3, 4, 4]] },
+  { name: "蓝绣球日", goalBouquets: 6, targetScore: 2100, comboGoal: 4, maxTierGoal: 5, spawnTier1Rate: 0.34, spray: 2, spade: 1, overloadMs: 2000, orderPool: [2, 3, 4], orderStages: [[2, 2, 3], [2, 3, 4], [3, 4, 4]] },
+  { name: "康乃馨约", goalBouquets: 6, targetScore: 2500, comboGoal: 5, maxTierGoal: 5, spawnTier1Rate: 0.35, spray: 1, spade: 1, overloadMs: 1950, orderPool: [2, 3, 4], orderStages: [[2, 3, 3], [2, 3, 4], [3, 4, 4]] },
+  { name: "向阳花庭", goalBouquets: 7, targetScore: 3100, comboGoal: 5, maxTierGoal: 6, spawnTier1Rate: 0.36, spray: 2, spade: 1, overloadMs: 1900, orderPool: [2, 3, 4], orderStages: [[2, 3, 3], [3, 4, 4], [4, 4, 4]] },
+  { name: "满园盛放", goalBouquets: 7, targetScore: 3800, comboGoal: 6, maxTierGoal: 6, spawnTier1Rate: 0.38, spray: 2, spade: 1, overloadMs: 1850, orderPool: [2, 3, 4], orderStages: [[2, 3, 4], [3, 4, 4], [4, 4, 4]] },
+];
 const MAX_HINTS = 3;
 
 const BAL = {
@@ -57,9 +132,16 @@ const S = {
   lastDrop: 0,
   over: 0,
   running: true,
+  levelIdx: clamp(Number(load("flower_level", 0)) || 0, 0, LEVELS.length - 1),
+  unlocked: clamp(Number(load("flower_unlocked", 0)) || 0, 0, LEVELS.length - 1),
+  lastStars: 0,
   spray: 1,
   spade: 1,
+  sprayUsed: 0,
+  spadeUsed: 0,
   bouquets: 0,
+  specialDone: 0,
+  scoreBoostUntil: 0,
   maxTier: 0,
   bestCombo: 0,
   orders: [],
@@ -82,6 +164,122 @@ function load(k, d) {
 
 function save(k, v) {
   try { localStorage.setItem(k, JSON.stringify(v)); } catch {}
+}
+
+function currentLevel() {
+  S.levelIdx = clamp(Number(S.levelIdx) || 0, 0, LEVELS.length - 1);
+  return LEVELS[S.levelIdx];
+}
+
+function orderStage() {
+  const lv = currentLevel();
+  const ratio = lv.goalBouquets ? S.bouquets / lv.goalBouquets : 0;
+  if (ratio >= 0.66) return 2;
+  if (ratio >= 0.33) return 1;
+  return 0;
+}
+
+function levelRecipeIds(stage = orderStage()) {
+  const lv = currentLevel();
+  if (lv.orderStages && lv.orderStages.length) {
+    return lv.orderStages[clamp(stage, 0, lv.orderStages.length - 1)] || lv.orderStages[0];
+  }
+  return lv.orderPool || BOUQUETS.map((_, i) => i);
+}
+
+function levelRecipes(stage = orderStage()) {
+  const pool = levelRecipeIds(stage);
+  return pool.map((idx) => BOUQUETS[idx]).filter(Boolean);
+}
+
+function shuffleCopy(items) {
+  return items.slice().sort(() => Math.random() - 0.5);
+}
+
+function uniqueRecipes(recipes) {
+  const seen = new Set();
+  return recipes.filter((recipe) => {
+    if (!recipe || seen.has(recipe.name)) return false;
+    seen.add(recipe.name);
+    return true;
+  });
+}
+
+function leadById(id) {
+  return LEADS.find((lead) => lead.id === id) || LEADS[0];
+}
+
+function availableSpecialOrders() {
+  return SPECIAL_ORDERS.filter((order) => S.levelIdx >= order.minLevel);
+}
+
+function pickSpecialOrder() {
+  const pool = availableSpecialOrders();
+  if (!pool.length) return null;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function hasActiveSpecialOrder() {
+  return S.orders && S.orders.some((order) => order && !order.done && order.special);
+}
+
+function shouldSpawnSpecialOrder() {
+  if (hasActiveSpecialOrder()) return false;
+  if (S.specialDone <= 0 && S.bouquets <= 0) return true;
+  const chance = clamp(0.18 + S.levelIdx * 0.015 + S.specialDone * 0.02, 0.18, 0.34);
+  return Math.random() < chance;
+}
+
+function startLevel(idx = S.levelIdx) {
+  S.levelIdx = clamp(Number(idx) || 0, 0, LEVELS.length - 1);
+  S.unlocked = Math.max(S.unlocked, S.levelIdx);
+  save("flower_level", S.levelIdx);
+  save("flower_unlocked", S.unlocked);
+  reset();
+}
+
+function savedStars(idx) {
+  return clamp(Number(load("flower_level_star_" + idx, 0)) || 0, 0, 3);
+}
+
+function saveStars(idx, stars) {
+  const best = Math.max(savedStars(idx), stars);
+  save("flower_level_star_" + idx, best);
+  return best;
+}
+
+function openLevelBook() {
+  renderLevelBook();
+  $("levelOverlay").classList.add("show");
+  $("levelOverlay").setAttribute("aria-hidden", "false");
+}
+
+function closeLevelBook() {
+  $("levelOverlay").classList.remove("show");
+  $("levelOverlay").setAttribute("aria-hidden", "true");
+}
+
+function renderLevelBook() {
+  const host = $("levelGrid");
+  if (!host) return;
+  const unlocked = Math.max(S.unlocked, S.levelIdx);
+  host.innerHTML = LEVELS.map((lv, i) => {
+    const locked = i > unlocked;
+    const stars = savedStars(i);
+    const current = i === S.levelIdx;
+    const state = locked ? "未开放" : (stars ? starText(stars) : "☆☆☆");
+    return `<button class="level-card ${current ? "current" : ""}" data-level="${i}" ${locked ? "disabled" : ""}>
+      <span class="level-card-top"><span class="level-no">${i + 1}</span><span class="level-stars">${state}</span></span>
+      <strong>${lv.name}</strong>
+      <small>${lv.goalBouquets} 束 · ${lv.targetScore} 分</small>
+    </button>`;
+  }).join("");
+  for (const btn of host.querySelectorAll(".level-card:not(:disabled)")) {
+    btn.onclick = () => {
+      closeLevelBook();
+      startLevel(Number(btn.dataset.level));
+    };
+  }
 }
 
 function rand(seed) {
@@ -130,7 +328,7 @@ function keepInside() {
 }
 
 function spawnTier() {
-  return Math.random() < 0.28 ? 1 : 0;
+  return Math.random() < currentLevel().spawnTier1Rate ? 1 : 0;
 }
 
 function mkBall(tier, x, y, vy = 0) {
@@ -152,6 +350,7 @@ function mkBall(tier, x, y, vy = 0) {
 }
 
 function reset() {
+  const lv = currentLevel();
   S.balls = [];
   S.particles = [];
   S.score = 0;
@@ -159,41 +358,84 @@ function reset() {
   S.comboAt = 0;
   S.over = 0;
   S.running = true;
-  S.spray = 1;
-  S.spade = 1;
+  S.spray = lv.spray;
+  S.spade = lv.spade;
+  S.sprayUsed = 0;
+  S.spadeUsed = 0;
   S.bouquets = 0;
+  S.specialDone = 0;
+  S.scoreBoostUntil = 0;
   S.maxTier = 0;
   S.bestCombo = 0;
+  S.lastStars = 0;
   S.orders = makeOrders();
   S.next = { tier: spawnTier() };
   S.holding = { tier: spawnTier(), x: (FIELD.L + FIELD.R) / 2 };
   $("overlay").classList.remove("show");
   $("overlay").setAttribute("aria-hidden", "true");
+  $("btnNextLevel").hidden = true;
+  $("btnAgain").textContent = "再开一局";
   updateHud();
   drawNext();
+  const firstSpecial = S.orders.find((order) => order.special);
+  if (firstSpecial) setTimeout(() => showLeadNote(firstSpecial, firstSpecial.line), 520);
 }
 
 function makeOrders() {
-  const pool = BOUQUETS.slice().sort(() => Math.random() - 0.5);
-  return pool.slice(0, 3).map((recipe, i) => cloneOrder(recipe, i));
+  const lv = currentLevel();
+  const recipes = uniqueRecipes([
+    ...levelRecipes(0),
+    ...levelRecipes(1),
+    ...levelRecipes(2),
+    ...(lv.orderPool || []).map((idx) => BOUQUETS[idx]),
+  ]);
+  const pool = shuffleCopy(recipes);
+  while (pool.length < 3) pool.push(recipes[pool.length % recipes.length] || BOUQUETS[0]);
+  const orders = pool.slice(0, 3);
+  const special = pickSpecialOrder();
+  if (special) orders[2] = special;
+  return orders.map((recipe, i) => cloneOrder(recipe, i));
 }
 
-function cloneOrder(recipe, slot) {
+function cloneOrder(recipe, slot, incoming = false) {
+  const lead = recipe.leadId ? leadById(recipe.leadId) : null;
   return {
     slot,
+    key: recipe.key || recipe.name,
     name: recipe.name,
     bonus: recipe.bonus,
     req: recipe.req.map(([tier, count]) => ({ tier, count, got: 0 })),
     done: false,
+    incoming,
+    special: !!recipe.special,
+    leadId: recipe.leadId || "",
+    leadName: lead ? lead.name : "",
+    leadImg: lead ? lead.img : "",
+    leadAccent: lead ? lead.accent : "",
+    leadPos: lead ? lead.pos : "50% 50%",
+    tag: recipe.tag || "",
+    line: recipe.line || "",
+    doneLine: recipe.doneLine || "",
+    reward: recipe.reward ? { ...recipe.reward } : null,
   };
 }
 
 function refillOrder(slot) {
   const used = new Set(S.orders.filter((o) => !o.done).map((o) => o.name));
-  const candidates = BOUQUETS.filter((b) => !used.has(b.name));
-  const recipe = candidates[Math.floor(Math.random() * candidates.length)] || BOUQUETS[slot % BOUQUETS.length];
-  S.orders[slot] = cloneOrder(recipe, slot);
+  const recipes = levelRecipes();
+  const candidates = recipes.filter((b) => !used.has(b.name));
+  const source = candidates.length ? candidates : recipes;
+  const special = shouldSpawnSpecialOrder() ? pickSpecialOrder() : null;
+  const recipe = special || source[Math.floor(Math.random() * source.length)] || BOUQUETS[slot % BOUQUETS.length];
+  S.orders[slot] = cloneOrder(recipe, slot, true);
   renderOrders();
+  if (S.orders[slot].special) {
+    showLeadNote(S.orders[slot], S.orders[slot].line || "新的来信到了。");
+  }
+  setTimeout(() => {
+    if (S.orders[slot]) S.orders[slot].incoming = false;
+    renderOrders();
+  }, 420);
 }
 
 function queueNext() {
@@ -349,10 +591,11 @@ function collectForOrder(ball) {
       addScore(order.bonus);
       S.spray += S.bouquets % 2 === 0 ? 1 : 0;
       S.spade += S.bouquets % 3 === 0 ? 1 : 0;
+      if (order.special) applySpecialReward(order, ball.x, ball.y);
       burst(ball.x, ball.y - 18, "#d9aa58", 38, 2.6);
       floatText(ball.x, ball.y - 26, order.name + " +" + order.bonus, "order");
       toast("完成 " + order.name);
-      if (S.bouquets >= GOAL_BOUQUETS) {
+      if (S.bouquets >= currentLevel().goalBouquets) {
         setTimeout(roundClear, 820);
       } else {
         setTimeout(() => refillOrder(order.slot), 900);
@@ -361,6 +604,24 @@ function collectForOrder(ball) {
     return true;
   }
   return false;
+}
+
+function applySpecialReward(order, x, y) {
+  const reward = order.reward || {};
+  S.specialDone++;
+  if (reward.spray) S.spray += reward.spray;
+  if (reward.spade) S.spade += reward.spade;
+  if (reward.score) addScore(reward.score);
+  if (reward.boost) {
+    S.scoreBoostUntil = Math.max(S.scoreBoostUntil, performance.now() + reward.boost);
+    floatText(x, y - 56, "心动加成", "combo");
+  }
+  if (reward.clearTiny) {
+    pruneTinyNear(CW / 2, FIELD.BOT - 90 * SCALE, 180 * SCALE);
+    floatText(CW / 2, FIELD.BOT - 122 * SCALE, "夜蓝清场", "combo");
+  }
+  showLeadNote(order, order.doneLine || (order.leadName + " 收下了花束。"));
+  updateHud();
 }
 
 function animateHarvest(ball, slot, tier) {
@@ -440,7 +701,8 @@ function pruneTinyNear(x, y, reach) {
 }
 
 function addScore(v) {
-  S.score += v;
+  const gain = S.scoreBoostUntil > performance.now() ? Math.round(v * 1.35) : v;
+  S.score += gain;
   if (S.score > S.best) {
     S.best = S.score;
     save("flower_best", S.best);
@@ -453,7 +715,9 @@ function addScore(v) {
 }
 
 function updateHud() {
+  const lv = currentLevel();
   $("scoreBox").textContent = S.score;
+  $("scoreBox").classList.toggle("boost", S.scoreBoostUntil > performance.now());
   $("bestScore").textContent = S.best;
   $("sprayCount").textContent = S.spray;
   $("spadeCount").textContent = S.spade;
@@ -461,7 +725,10 @@ function updateHud() {
   $("btnSpade").classList.toggle("disabled", S.spade <= 0);
   const tier = S.holding ? S.holding.tier : 0;
   $("tierName").textContent = TIERS[tier].name;
+  $("levelTag").textContent = "第 " + (S.levelIdx + 1) + " 关";
+  $("levelName").textContent = lv.name;
   $("bouquetCount").textContent = S.bouquets;
+  $("bouquetGoal").textContent = lv.goalBouquets;
   renderOrders();
 }
 
@@ -474,7 +741,18 @@ function renderOrders() {
       const t = TIERS[r.tier];
       return `<span class="bouquet-need ${full ? "full" : ""}" data-tier="${r.tier}" title="${t.name} ${Math.min(r.got, r.count)}/${r.count}" style="--need-color:${t.colors[0]};--need-soft:${t.colors[1]}"><span class="need-flower"></span><span class="need-num">${Math.min(r.got, r.count)}/${r.count}</span>${full ? `<span class="need-check">✓</span>` : ""}</span>`;
     }).join("");
-    return `<div class="bouquet-card ${order.done ? "done" : ""}" data-slot="${order.slot}"><span class="bouquet-name">${order.done ? "已包装" : order.name}</span><div class="bouquet-reqs">${needs}</div></div>`;
+    const cls = ["bouquet-card", order.special ? "special" : "", order.done ? "done" : "", order.incoming ? "incoming" : ""].filter(Boolean).join(" ");
+    if (order.special) {
+      return `<div class="${cls}" data-slot="${order.slot}" style="--lead-accent:${order.leadAccent};--lead-pos:${order.leadPos}">
+        <div class="lead-order-top">
+          <img class="lead-avatar" src="${order.leadImg}" alt="">
+          <span class="lead-order-copy"><em>${order.tag || "来信"}</em><strong>${order.done ? "已赴约" : order.leadName}</strong></span>
+        </div>
+        <span class="bouquet-name">${order.done ? order.name : order.name}</span>
+        <div class="bouquet-reqs">${needs}</div>
+      </div>`;
+    }
+    return `<div class="${cls}" data-slot="${order.slot}"><span class="bouquet-name">${order.done ? "已包装" : order.name}</span><div class="bouquet-reqs">${needs}</div></div>`;
   }).join("");
 }
 
@@ -515,6 +793,24 @@ function floatText(x, y, text, cls = "") {
   e.style.top = (rect.top - base.top + y) + "px";
   host.appendChild(e);
   setTimeout(() => e.remove(), 1050);
+}
+
+function showLeadNote(order, text) {
+  if (!order || !order.special) return;
+  const host = $("garden");
+  const prev = host.querySelector(".lead-note");
+  if (prev) prev.remove();
+  const note = document.createElement("div");
+  note.className = "lead-note";
+  note.style.setProperty("--lead-accent", order.leadAccent);
+  note.style.setProperty("--lead-pos", order.leadPos);
+  note.innerHTML = `<img src="${order.leadImg}" alt=""><span><em>${order.leadName}</em><strong>${text}</strong></span>`;
+  host.appendChild(note);
+  requestAnimationFrame(() => note.classList.add("show"));
+  setTimeout(() => {
+    note.classList.remove("show");
+    setTimeout(() => note.remove(), 260);
+  }, 2300);
 }
 
 function updateParticles() {
@@ -834,26 +1130,55 @@ function drawNext() {
 function checkOverload(dt) {
   const over = S.balls.some((b) => b.y - b.r < FIELD.TOP && Math.abs(b.vy) < 0.9);
   S.over = over ? S.over + dt : Math.max(0, S.over - dt * 2.4);
-  if (S.over > BAL.overloadMs) gameOver();
+  if (S.over > (currentLevel().overloadMs || BAL.overloadMs)) gameOver();
 }
 
 function gameOver() {
   if (!S.running) return;
   S.running = false;
-  showResult("花园已满", "完成花束 " + S.bouquets + "/" + GOAL_BOUQUETS);
+  const lv = currentLevel();
+  showResult("花园已满", "第 " + (S.levelIdx + 1) + " 关 · 完成花束 " + S.bouquets + "/" + lv.goalBouquets + " · 最高连锁 ×" + Math.max(1, S.bestCombo));
 }
 
 function roundClear() {
   if (!S.running) return;
   S.running = false;
   burst(CW / 2, FIELD.TOP + 48, "#d9aa58", 70, 3.2);
-  showResult("今日花束完成", "最大花 " + TIERS[S.maxTier].name + " · 最高连锁 ×" + Math.max(1, S.bestCombo));
+  const lv = currentLevel();
+  const stars = calcStars();
+  S.lastStars = stars;
+  const bestStars = saveStars(S.levelIdx, stars);
+  S.unlocked = Math.max(S.unlocked, Math.min(S.levelIdx + 1, LEVELS.length - 1));
+  save("flower_unlocked", S.unlocked);
+  showResult(
+    "第 " + (S.levelIdx + 1) + " 关完成",
+    starText(stars) + " · " + lv.name + " · 目标分 " + S.score + "/" + lv.targetScore
+      + " · 最大花 " + TIERS[S.maxTier].name
+      + " · 最高连锁 ×" + Math.max(1, S.bestCombo)
+      + (S.specialDone ? " · 特殊委托 " + S.specialDone : "")
+      + (bestStars > stars ? " · 历史 " + starText(bestStars) : ""),
+    true
+  );
 }
 
-function showResult(title, stats) {
+function calcStars() {
+  const lv = currentLevel();
+  let stars = 1;
+  if (S.score >= lv.targetScore) stars++;
+  if (S.bestCombo >= lv.comboGoal || S.maxTier >= lv.maxTierGoal) stars++;
+  return clamp(stars, 1, 3);
+}
+
+function starText(stars) {
+  return "★".repeat(stars) + "☆".repeat(3 - stars);
+}
+
+function showResult(title, stats, cleared = false) {
   $("modalTitle").textContent = title;
   $("finalScore").textContent = S.score;
   $("modalStats").textContent = stats;
+  $("btnAgain").textContent = cleared ? "重玩本关" : "再试一次";
+  $("btnNextLevel").hidden = !(cleared && S.levelIdx < LEVELS.length - 1);
   $("overlay").classList.add("show");
   $("overlay").setAttribute("aria-hidden", "false");
 }
@@ -861,6 +1186,7 @@ function showResult(title, stats) {
 function useSpray() {
   if (!S.running || S.spray <= 0) return;
   S.spray--;
+  S.sprayUsed++;
   for (const a of S.balls) {
     let best = null;
     let bestD = Infinity;
@@ -888,6 +1214,7 @@ function useSpray() {
 function useSpade() {
   if (!S.running || S.spade <= 0 || !S.balls.length) return;
   S.spade--;
+  S.spadeUsed++;
   let target = S.balls[0];
   for (const b of S.balls) {
     if (b.y - b.r < target.y - target.r) target = b;
@@ -922,8 +1249,15 @@ function bindInput() {
 }
 
 function bindUI() {
-  $("btnRestart").onclick = reset;
-  $("btnAgain").onclick = reset;
+  $("btnRestart").onclick = () => startLevel(S.levelIdx);
+  $("btnAgain").onclick = () => startLevel(S.levelIdx);
+  $("btnNextLevel").onclick = () => startLevel(S.levelIdx + 1);
+  $("btnLevels").onclick = openLevelBook;
+  $("btnLevelBook").onclick = openLevelBook;
+  $("btnCloseLevels").onclick = closeLevelBook;
+  $("levelOverlay").addEventListener("click", (e) => {
+    if (e.target === $("levelOverlay")) closeLevelBook();
+  });
   $("btnSpray").onclick = useSpray;
   $("btnSpade").onclick = useSpade;
   addEventListener("resize", layout);
@@ -947,11 +1281,24 @@ window.__flowerDebug = {
   S,
   TIERS,
   BOUQUETS,
+  LEADS,
+  SPECIAL_ORDERS,
+  LEVELS,
   cloneOrder,
   mkBall,
   merge,
   renderOrders,
   updateHud,
+  currentLevel,
+  startLevel,
+  calcStars,
+  orderStage,
+  levelRecipeIds,
+  levelRecipes,
+  pickSpecialOrder,
+  showLeadNote,
+  renderLevelBook,
+  openLevelBook,
   get CW() { return CW; },
   get FIELD() { return FIELD; },
 };

@@ -21,10 +21,10 @@ body {
   color: var(--text);
   font-family: var(--sans);
   background:
-    radial-gradient(circle at 50% 3%, rgba(179, 62, 88, 0.24), transparent 34%),
-    radial-gradient(circle at 10% 76%, rgba(30, 139, 130, 0.18), transparent 36%),
-    radial-gradient(circle at 90% 76%, rgba(99, 112, 210, 0.15), transparent 36%),
-    linear-gradient(180deg, #24131e 0%, #111017 56%, #07090d 100%);
+    radial-gradient(ellipse at 50% -8%, rgba(205, 68, 96, 0.24), transparent 42%),
+    radial-gradient(ellipse at 8% 82%, rgba(24, 154, 139, 0.2), transparent 38%),
+    radial-gradient(ellipse at 92% 78%, rgba(102, 120, 218, 0.17), transparent 40%),
+    linear-gradient(180deg, #261620 0%, #111016 57%, #06080d 100%);
   user-select: none;
   -webkit-user-select: none;
 }
@@ -119,15 +119,30 @@ h1 {
   gap: 8px;
 }
 .stat {
+  position: relative;
   height: 50px;
   border: 1px solid var(--line);
-  border-radius: 11px;
-  background: linear-gradient(180deg, rgba(44, 38, 47, 0.78), rgba(22, 18, 27, 0.82));
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(243, 216, 150, 0.1), transparent 42%),
+    linear-gradient(180deg, rgba(44, 38, 47, 0.82), rgba(18, 16, 24, 0.88));
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 0 12px;
-  box-shadow: inset 0 0 16px rgba(255, 255, 255, 0.03);
+  padding: 0 12px 0 15px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -12px 18px rgba(0, 0, 0, 0.12);
+}
+.stat::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 11px;
+  bottom: 11px;
+  width: 2px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--gold-bright), rgba(127, 214, 194, 0.65));
 }
 .stat span {
   font-size: 11px;
@@ -141,28 +156,45 @@ h1 {
 
 .stage-wrap {
   position: relative;
+  isolation: isolate;
   flex: 1 1 auto;
   min-height: 380px;
-  border: 1px solid rgba(232, 198, 126, 0.18);
-  border-radius: 18px;
+  border: 1px solid rgba(243, 216, 150, 0.24);
+  border-radius: 16px;
   overflow: hidden;
   background:
-    linear-gradient(rgba(232, 198, 126, 0.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(232, 198, 126, 0.07) 1px, transparent 1px),
-    radial-gradient(circle at 50% 50%, rgba(216, 180, 106, 0.16), transparent 28%),
-    linear-gradient(160deg, rgba(22, 22, 32, 0.9), rgba(8, 10, 16, 0.94));
-  background-size: 28px 28px, 28px 28px, auto, auto;
-  box-shadow: inset 0 0 36px rgba(0, 0, 0, 0.38);
+    linear-gradient(rgba(232, 198, 126, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(232, 198, 126, 0.055) 1px, transparent 1px),
+    linear-gradient(160deg, rgba(37, 28, 38, 0.88), rgba(9, 11, 17, 0.96) 62%, rgba(10, 8, 13, 0.98)),
+    radial-gradient(ellipse at 50% 50%, rgba(216, 180, 106, 0.12), transparent 35%);
+  background-size: 32px 32px, 32px 32px, auto, auto;
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.24),
+    inset 0 0 40px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 .stage-wrap::before {
   content: "";
   position: absolute;
   inset: 14px;
-  border: 1px solid rgba(232, 198, 126, 0.12);
-  border-radius: 14px;
+  border: 1px solid rgba(232, 198, 126, 0.14);
+  border-radius: 10px;
+  z-index: 2;
+  pointer-events: none;
+}
+.stage-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 18%, transparent 78%, rgba(0, 0, 0, 0.26)),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.2), transparent 18%, transparent 82%, rgba(0, 0, 0, 0.2));
+  z-index: 2;
   pointer-events: none;
 }
 #stage {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
   height: 100%;
@@ -171,27 +203,89 @@ h1 {
 }
 .stage-hint {
   position: absolute;
+  z-index: 3;
   left: 50%;
   bottom: 12px;
   transform: translateX(-50%);
   max-width: calc(100% - 36px);
   padding: 8px 12px;
   border: 1px solid rgba(243, 216, 150, 0.24);
-  border-radius: 99px;
-  background: rgba(12, 10, 16, 0.72);
+  border-radius: 10px;
+  background: rgba(12, 10, 16, 0.76);
   color: var(--gold-bright);
   font-size: 12px;
   white-space: nowrap;
   pointer-events: none;
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.26);
+  box-shadow:
+    0 12px 26px rgba(0, 0, 0, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 .stage-hint.hide { opacity: 0; transition: opacity 0.24s ease; }
+
+.level-strip {
+  position: absolute;
+  z-index: 3;
+  top: 10px;
+  left: 50%;
+  width: min(248px, calc(100% - 128px));
+  min-width: 178px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(243, 216, 150, 0.2);
+  border-radius: 9px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 42%),
+    rgba(9, 8, 12, 0.72);
+  padding: 7px 9px 8px;
+  pointer-events: none;
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+.level-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.level-row span,
+.level-row b {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.level-row span {
+  color: var(--text);
+  font: 700 12px var(--serif);
+}
+.level-row b {
+  flex: 0 0 auto;
+  color: var(--gold-bright);
+  font: 700 10px var(--sans);
+}
+.level-meter {
+  height: 3px;
+  margin-top: 6px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.1);
+}
+.level-meter i {
+  display: block;
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7fd6c2, #f3d896, #ff6b4a);
+  transition: width 0.18s linear;
+}
 
 .log-panel {
   min-height: 82px;
   border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--panel);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent),
+    var(--panel);
   padding: 9px;
 }
 .panel-head {
@@ -234,18 +328,24 @@ h1 {
 .modal-btn {
   height: 42px;
   border: 1px solid rgba(243, 216, 150, 0.38);
-  border-radius: 12px;
+  border-radius: 10px;
   font: 700 13px var(--sans);
   cursor: pointer;
 }
 .main-btn {
   color: #22170a;
-  background: linear-gradient(160deg, #f3d896, #c49746);
-  box-shadow: 0 12px 24px rgba(216, 180, 106, 0.2);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28), transparent 38%),
+    linear-gradient(160deg, #f3d896, #c49746);
+  box-shadow:
+    0 12px 24px rgba(216, 180, 106, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42);
 }
 .ghost-btn {
   color: var(--gold-bright);
-  background: rgba(24, 20, 29, 0.8);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent),
+    rgba(24, 20, 29, 0.84);
 }
 .main-btn:active,
 .ghost-btn:active,
@@ -359,4 +459,10 @@ h1 {
   .status-grid { display: none; }
   .stage-wrap { min-height: 336px; }
   .log-panel { display: none; }
+  .level-strip {
+    top: 8px;
+    width: min(220px, calc(100% - 124px));
+    padding: 6px 8px;
+  }
+  .level-row span { font-size: 11px; }
 }
